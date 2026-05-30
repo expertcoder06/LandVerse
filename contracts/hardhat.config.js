@@ -1,16 +1,18 @@
-require("@nomicfoundation/hardhat-toolbox");
-require("dotenv").config();
+import "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import "dotenv/config";
+import { defineConfig } from "hardhat/config";
 
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
-module.exports = {
+export default defineConfig({
   solidity: "0.8.20",
 
   networks: {
     sepolia: {
+      type: "http",
       url: SEPOLIA_RPC_URL,
-      accounts: [PRIVATE_KEY],
+      accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
     },
   },
-};
+});

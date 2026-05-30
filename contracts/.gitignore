@@ -1,2 +1,16 @@
+# Hardhat compilation and cache outputs
+artifacts/
+cache/
+
+# Dependencies
+node_modules/
+
+# Environment variables / Secrets
 .env
-.node_modules
+
+# Testing and coverage reports
+coverage/
+coverage.json
+
+# Hardhat Ignition deployments
+ignition/deployments/
