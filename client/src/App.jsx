@@ -6,6 +6,8 @@ import OTPVerificationPage from './pages/OTPVerificationPage';
 import ConnectWalletPage from './pages/ConnectWalletPage';
 import KYCVerificationPage from './pages/KYCVerificationPage';
 import DashboardPage from './pages/DashboardPage';
+import PaymentConfirmationPage from './pages/PaymentConfirmationPage';
+import OwnershipTransferSuccessPage from './pages/OwnershipTransferSuccessPage';
 
 function App() {
   return (
@@ -18,6 +20,8 @@ function App() {
         <Route path="/connect-wallet" element={<ConnectWalletPage />} />
         <Route path="/kyc" element={<KYCVerificationPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/payment" element={<PaymentConfirmationPage />} />
+        <Route path="/transfer-success" element={<OwnershipTransferSuccessPage />} />
       </Routes>
     </BrowserRouter>
   );
