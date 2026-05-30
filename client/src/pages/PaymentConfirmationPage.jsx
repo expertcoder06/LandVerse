@@ -7,7 +7,7 @@ function PaymentConfirmationPage() {
   const [copiedSeller, setCopiedSeller] = useState(false);
 
   const handleCopySeller = () => {
-    navigator.clipboard.writeText('0x9fE4...a83a8bd57fbe'); // In real app: full address, but mock is fine
+    navigator.clipboard.writeText('0x9fE4...a83a8bd57fbe');
     setCopiedSeller(true);
     setTimeout(() => setCopiedSeller(false), 2000);
   };
@@ -17,6 +17,10 @@ function PaymentConfirmationPage() {
     setConfirmState('processing');
     setTimeout(() => {
       setConfirmState('complete');
+      // Redirect to /transfer-success after a short delay so the user sees the completed state
+      setTimeout(() => {
+        navigate('/transfer-success');
+      }, 1000);
     }, 3000);
   };
 
@@ -172,7 +176,7 @@ function PaymentConfirmationPage() {
                   className="w-full py-5 rounded-md bg-primary-container/80 text-on-primary font-display font-extrabold text-lg uppercase tracking-widest flex items-center gap-3 justify-center opacity-85 cursor-not-allowed"
                 >
                   <svg className="animate-spin h-5 w-5 text-on-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path
                       className="opacity-75"
                       fill="currentColor"
