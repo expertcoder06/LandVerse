@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 
 const STAT_CARDS = [
   {
@@ -47,6 +48,76 @@ function AuthorityDashboardPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [caseStatus, setCaseStatus] = useState('pending'); // 'pending' | 'approved' | 'rejected' | 'changes'
 
+  const [adminDetails, setAdminDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchAdminProfile = async () => {
+      try {
+        setLoading(true);
+        // Get active auth user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          console.warn('No active session, redirecting to /login');
+          navigate('/login');
+          return;
+        }
+
+        // Query adminstartator table
+        const { data: admin, error: adminError } = await supabase
+          .from('adminstartator')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (adminError || !admin) {
+          console.log('Admin record not found in adminstartator, searching profiles as fallback', adminError);
+          // Query profiles as fallback
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          if (profile && profile.role === 'authority') {
+            setAdminDetails({
+              full_name: profile.full_name,
+              role: profile.role,
+              email: user.email
+            });
+          } else {
+            console.error('User is not authorized as authority in profiles', profileError);
+            setError('Access Denied: You do not have authority privileges.');
+            await supabase.auth.signOut();
+            navigate('/login');
+            return;
+          }
+        } else {
+          setAdminDetails(admin);
+        }
+      } catch (err) {
+        console.error('Error fetching admin profile:', err);
+        setError('Error establishing server connection.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdminProfile();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate('/login');
+    } catch (err) {
+      console.error('Error during sign out:', err);
+      navigate('/login');
+    }
+  };
+
   const handleAction = (status) => {
     setCaseStatus(status);
     setTimeout(() => {
@@ -89,20 +160,34 @@ function AuthorityDashboardPage() {
           <button className="w-full py-4 rounded-md bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold shadow-[0_4px_20px_rgba(143,245,255,0.2)] active:scale-95 transition-transform duration-150">
             New Entry
           </button>
-          <div className="mt-8 flex items-center gap-3 px-2">
-            <div className="relative">
-              <img
-                alt="Admin User Avatar"
-                className="w-10 h-10 rounded-full object-cover border border-primary/20"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9hvVavHZPZy4sIdE-YmZwBGRvoZfxz6Vl-Jpfb5V7_oiRLmPOFr53wq414lM9ImLTpeGKxDgizvlgDQVxCHefit2WVW5XNaDG-1FGMXqep0p55l7BXWgpyUmzAc4bevNVFuoK45bVboiOzhb4irzA71FQHpKnIkcAAbflS87hrMZGGEDhAmzKTr_Es3ne533ZBNlJjsK23f9tC25ODTSZeybLPDjulD16eFXaK0YLDg1h-mlxX_9Yfu5g2Jf60pyImgnaTpqdhJm6"
-              />
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-tertiary rounded-full border-2 border-surface-container shadow-sm animate-pulse"></div>
+          <div className="mt-8 flex items-center justify-between px-2 w-full">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative flex-shrink-0">
+                <img
+                  alt="Admin User Avatar"
+                  className="w-10 h-10 rounded-full object-cover border border-primary/20"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9hvVavHZPZy4sIdE-YmZwBGRvoZfxz6Vl-Jpfb5V7_oiRLmPOFr53wq414lM9ImLTpeGKxDgizvlgDQVxCHefit2WVW5XNaDG-1FGMXqep0p55l7BXWgpyUmzAc4bevNVFuoK45bVboiOzhb4irzA71FQHpKnIkcAAbflS87hrMZGGEDhAmzKTr_Es3ne533ZBNlJjsK23f9tC25ODTSZeybLPDjulD16eFXaK0YLDg1h-mlxX_9Yfu5g2Jf60pyImgnaTpqdhJm6"
+                />
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-tertiary rounded-full border-2 border-surface-container shadow-sm animate-pulse"></div>
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-on-surface truncate pr-1" title={loading ? 'Loading...' : (adminDetails?.full_name || 'Admin User')}>
+                  {loading ? 'Loading...' : (adminDetails?.full_name || 'Admin User')}
+                </p>
+                <p className="text-[0.7rem] text-on-surface-variant uppercase tracking-tighter truncate" title={loading ? 'Registrar' : (adminDetails?.role === 'authority' ? 'Chief Registrar' : adminDetails?.role || 'Registrar')}>
+                  {loading ? 'Registrar' : (adminDetails?.role === 'authority' ? 'Chief Registrar' : adminDetails?.role || 'Registrar')}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-on-surface">Admin User</p>
-              <p className="text-[0.7rem] text-on-surface-variant uppercase tracking-tighter">Chief Registrar</p>
-            </div>
+            <button 
+              onClick={handleLogout}
+              title="Sign Out"
+              className="text-on-surface-variant hover:text-error transition-all p-2 rounded-full hover:bg-error/10 flex items-center justify-center cursor-pointer flex-shrink-0"
+            >
+              <span className="material-symbols-outlined text-[20px]">logout</span>
+            </button>
           </div>
+
         </div>
       </aside>
 

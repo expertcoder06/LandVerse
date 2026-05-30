@@ -45,7 +45,7 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
+    const { data: loginData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -56,8 +56,28 @@ const LoginPage = () => {
       return;
     }
 
+    // Query adminstartator table to check if the user is an admin
+    const { data: admin } = await supabase
+      .from('adminstartator')
+      .select('role')
+      .eq('id', loginData.user.id)
+      .single();
+
+    // Query profiles as fallback
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', loginData.user.id)
+      .single();
+
+    const isAuthority = (admin && admin.role === 'authority') || (profile && profile.role === 'authority');
+
     setLoading(false);
-    navigate('/dashboard');
+    if (isAuthority) {
+      navigate('/authority-dashboard');
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   return (
