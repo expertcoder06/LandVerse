@@ -49,6 +49,28 @@ const ConnectWalletPage = () => {
   };
 
   useEffect(() => {
+    const checkExistingWallet = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('wallet_address')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profile?.wallet_address) {
+            setConnectedWallet('MetaMask');
+            setConnectedAddress(profile.wallet_address);
+          }
+        }
+      } catch (err) {
+        console.error('Error checking existing wallet:', err);
+      }
+    };
+
+    checkExistingWallet();
+
     const handleMouseMove = (e) => {
       if (!cardRef.current) return;
       const xAxis = (window.innerWidth / 2 - e.pageX) / 50;
