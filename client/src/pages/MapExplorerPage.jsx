@@ -20,7 +20,7 @@ const MapExplorerPage = () => {
   }, []);
 
   return (
-    <div className="bg-surface text-on-surface font-body selection:bg-primary/30 overflow-hidden h-screen">
+    <div className="bg-surface text-on-surface font-body selection:bg-primary/30 overflow-hidden h-screen page-enter">
       {/* TopNavBar */}
       <nav className="fixed top-0 w-full z-50 bg-surface/40 backdrop-blur-xl flex justify-between items-center px-8 h-20 w-full shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
         <div className="flex items-center gap-8">
@@ -150,7 +150,7 @@ const MapExplorerPage = () => {
                 <span className="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase">Unclaimed</span>
               </div>
             </div>
-            <button className="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold py-3 px-6 rounded-md shadow-[0_0_20px_rgba(143,245,255,0.3)] hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+            <button className="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary font-bold py-3 px-6 rounded-md shadow-[0_0_20px_rgba(143,245,255,0.3)] hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 btn-shimmer">
               <span className="material-symbols-outlined text-xl">save</span>
               Save Location
             </button>

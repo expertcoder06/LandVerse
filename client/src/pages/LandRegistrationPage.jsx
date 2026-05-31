@@ -18,7 +18,7 @@ const LandRegistrationPage = () => {
   const handleBlur = () => setFocusedInput(null);
 
   return (
-    <div className="text-on-surface selection:bg-primary/30 selection:text-primary min-h-screen mesh-bg overflow-x-hidden">
+    <div className="text-on-surface selection:bg-primary/30 selection:text-primary min-h-screen mesh-bg overflow-x-hidden page-enter">
       {/* TopNavBar */}
       <header className="fixed top-0 w-full z-50 bg-surface/40 backdrop-blur-xl flex justify-between items-center px-8 h-20 shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
         <div className="flex items-center gap-4">

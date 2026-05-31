@@ -163,7 +163,7 @@ const NFT_miningPage = () => {
   };
 
   return (
-    <div className="bg-surface text-on-surface font-body selection:bg-primary selection:text-on-primary min-h-screen relative overflow-x-hidden">
+    <div className="bg-surface text-on-surface font-body selection:bg-primary selection:text-on-primary min-h-screen relative overflow-x-hidden page-enter">
       <style>{styles}</style>
       <div className="fixed inset-0 grid-bg pointer-events-none z-0 opacity-40" />
 
@@ -215,7 +215,7 @@ const NFT_miningPage = () => {
             <button 
               onClick={handleConnectWallet}
               disabled={isConnectingWallet}
-              className="bg-primary text-on-primary px-6 py-2 rounded-full font-headline text-sm font-bold scale-95 active:scale-90 transition-all hover:shadow-[0_0_20px_rgba(143,245,255,0.4)]"
+              className="bg-primary text-on-primary px-6 py-2 rounded-full font-headline text-sm font-bold scale-95 active:scale-90 transition-all hover:shadow-[0_0_20px_rgba(143,245,255,0.4)] btn-shimmer"
             >
               {isConnectingWallet ? 'Connecting...' : 'Connect Wallet'}
             </button>
@@ -333,7 +333,7 @@ const NFT_miningPage = () => {
 
           {/* METADATA TECHNICAL PANEL (RIGHT) */}
           <div className="lg:col-span-5 flex flex-col gap-6">
-            <div className="bg-surface-container p-8 rounded-lg border border-outline-variant/5 shadow-lg">
+            <div className="bg-surface-container p-8 rounded-lg border border-outline-variant/5 shadow-lg hover-glow-border">
               <h2 className="font-headline text-2xl font-bold mb-8 text-on-surface">Asset Metadata</h2>
               
               <div className="space-y-6">
@@ -403,7 +403,7 @@ const NFT_miningPage = () => {
                 ) : (
                   <button 
                     onClick={handleMintNFT}
-                    className="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary py-5 rounded-md font-headline font-bold tracking-widest uppercase text-sm mint-glow-active transition-all duration-300 transform hover:-translate-y-1 active:scale-[0.98] shadow-lg shadow-primary/10"
+                    className="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary py-5 rounded-md font-headline font-bold tracking-widest uppercase text-sm mint-glow-active transition-all duration-300 transform hover:-translate-y-1 active:scale-[0.98] shadow-lg shadow-primary/10 btn-shimmer"
                   >
                     Mint NFT
                   </button>

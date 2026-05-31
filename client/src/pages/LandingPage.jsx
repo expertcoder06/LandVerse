@@ -8,7 +8,7 @@ import Footer from '../components/Footer';
 
 const LandingPage = () => {
   return (
-    <>
+    <div className="page-enter">
       <Navbar />
       <Hero />
       <Features />
@@ -16,7 +16,7 @@ const LandingPage = () => {
       <Demo />
       <TrustSection />
       <Footer />
-    </>
+    </div>
   );
 };
 

@@ -139,7 +139,7 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="bg-surface text-on-surface font-body min-h-screen selection:bg-primary/20 relative">
+    <div className="bg-surface text-on-surface font-body min-h-screen selection:bg-primary/20 relative page-enter">
       {/* Grid Background */}
       <div className="fixed inset-0 grid-bg pointer-events-none z-0" />
 
@@ -268,7 +268,7 @@ const DashboardPage = () => {
           {/* ── Stats Cards ── */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-12">
             {/* Card 1 — Total Lands */}
-            <GlassCard className="p-8 relative overflow-hidden group">
+            <GlassCard className="p-8 relative overflow-hidden group hover-lift">
               <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-3xl transition-all group-hover:bg-primary/20" />
               <p className="text-on-surface-variant font-label text-xs uppercase tracking-[0.2em] mb-2">Total Lands Registered</p>
               <div className="flex items-end gap-3">
@@ -285,7 +285,7 @@ const DashboardPage = () => {
             </GlassCard>
 
             {/* Card 2 — NFTs Owned */}
-            <GlassCard className="p-8 relative overflow-hidden group">
+            <GlassCard className="p-8 relative overflow-hidden group hover-lift">
               <div className="absolute -right-4 -top-4 w-24 h-24 bg-secondary/10 rounded-full blur-3xl transition-all group-hover:bg-secondary/20" />
               <p className="text-on-surface-variant font-label text-xs uppercase tracking-[0.2em] mb-2">NFTs Owned</p>
               <div className="flex items-end gap-3">
@@ -302,7 +302,7 @@ const DashboardPage = () => {
             </GlassCard>
 
             {/* Card 3 — Pending Verifications */}
-            <GlassCard className="p-8 relative overflow-hidden group">
+            <GlassCard className="p-8 relative overflow-hidden group hover-lift">
               <div className="absolute -right-4 -top-4 w-24 h-24 bg-tertiary/10 rounded-full blur-3xl transition-all group-hover:bg-tertiary/20" />
               <p className="text-on-surface-variant font-label text-xs uppercase tracking-[0.2em] mb-2">Pending Verifications</p>
               <div className="flex items-end gap-3">
@@ -330,7 +330,7 @@ const DashboardPage = () => {
             {userProfile.role === 'seller' && (
               <Link
                 to="/kyc"
-                className="primary-gradient text-on-primary-container px-8 py-4 rounded-md font-display font-bold flex items-center gap-3 transition-all active:scale-95 shadow-[0_10px_30px_rgba(0,238,252,0.2)] hover:shadow-[0_10px_40px_rgba(0,238,252,0.35)] whitespace-nowrap"
+                className="primary-gradient text-on-primary-container px-8 py-4 rounded-md font-display font-bold flex items-center gap-3 transition-all active:scale-95 shadow-[0_10px_30px_rgba(0,238,252,0.2)] hover:shadow-[0_10px_40px_rgba(0,238,252,0.35)] whitespace-nowrap btn-shimmer"
               >
                 <span className="material-symbols-outlined">add</span>
                 Upload New Land

@@ -12,7 +12,7 @@ function OwnershipTransferSuccessPage() {
   };
 
   return (
-    <div className="bg-background text-on-surface selection:bg-primary/30 min-h-screen overflow-x-hidden flex flex-col font-body">
+    <div className="bg-background text-on-surface selection:bg-primary/30 min-h-screen overflow-x-hidden flex flex-col font-body page-enter">
       {/* Top Navigation */}
       <header className="fixed top-0 w-full z-50 flex justify-between items-center px-8 h-20 bg-surface/40 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
         <Link to="/dashboard" className="font-display font-bold text-2xl tracking-tighter text-primary">

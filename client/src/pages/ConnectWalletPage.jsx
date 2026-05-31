@@ -39,7 +39,7 @@ const ConnectWalletPage = () => {
   }, []);
 
   return (
-    <div className="font-body selection:bg-primary-container selection:text-on-primary-container bg-surface text-on-surface min-h-screen flex flex-col overflow-x-hidden">
+    <div className="font-body selection:bg-primary-container selection:text-on-primary-container bg-surface text-on-surface min-h-screen flex flex-col overflow-x-hidden page-enter">
       {/* TopNavBar */}
       <header className="fixed top-0 w-full z-50 bg-surface-variant/40 backdrop-blur-xl shadow-2xl shadow-primary/5">
         <nav className="flex justify-between items-center px-8 py-4 max-w-full mx-auto">
@@ -64,8 +64,9 @@ const ConnectWalletPage = () => {
 
       <main className="flex-grow pt-24 flex flex-col items-center justify-center relative px-6 overflow-hidden" style={{ perspective: '1000px' }}>
         {/* Atmospheric Background Elements */}
-        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-secondary/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none animate-float-slow"></div>
+        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-secondary/10 rounded-full blur-[120px] pointer-events-none animate-float"></div>
+        <div className="absolute inset-0 grid-bg opacity-20 pointer-events-none z-0" />
         
         {/* Central Connection Card */}
         <div 
@@ -210,7 +211,7 @@ const ConnectWalletPage = () => {
               </p>
               <Link
                 to="/kyc"
-                className="w-full primary-gradient text-on-primary-container py-4 rounded-md font-headline font-bold uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-[0_0_30px_rgba(0,238,252,0.3)] transition-all active:scale-[0.98]"
+                className="w-full primary-gradient text-on-primary-container py-4 rounded-md font-headline font-bold uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-[0_0_30px_rgba(0,238,252,0.3)] transition-all active:scale-[0.98] btn-shimmer"
               >
                 Continue to KYC Verification
                 <span className="material-symbols-outlined">arrow_forward</span>

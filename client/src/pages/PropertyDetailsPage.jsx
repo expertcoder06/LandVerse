@@ -285,7 +285,7 @@ const PropertyDetailsPage = () => {
   };
 
   return (
-    <div className="bg-surface text-on-surface font-body selection:bg-primary/30 min-h-screen relative overflow-x-hidden">
+    <div className="bg-surface text-on-surface font-body selection:bg-primary/30 min-h-screen relative overflow-x-hidden page-enter">
       <style>{styles}</style>
       <div className="fixed inset-0 grid-bg pointer-events-none z-0 opacity-40" />
 

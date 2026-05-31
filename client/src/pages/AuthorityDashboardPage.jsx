@@ -126,7 +126,7 @@ function AuthorityDashboardPage() {
   };
 
   return (
-    <div className="bg-background text-on-surface font-body overflow-x-hidden selection:bg-primary/30 min-h-screen flex">
+    <div className="bg-background text-on-surface font-body overflow-x-hidden selection:bg-primary/30 min-h-screen flex page-enter">
       {/* SideNavBar Shell */}
       <aside className="fixed left-0 top-0 h-screen w-72 flex flex-col z-40 bg-surface-container shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
         <div className="p-8">
@@ -231,7 +231,7 @@ function AuthorityDashboardPage() {
             {STAT_CARDS.map((card) => (
               <div
                 key={card.id}
-                className="surface-container-low p-8 rounded-lg relative overflow-hidden group hover:bg-surface-container-high transition-all duration-300 border border-outline-variant/15 cursor-pointer"
+                className="surface-container-low p-8 rounded-lg relative overflow-hidden group hover:bg-surface-container-high transition-all duration-300 border border-outline-variant/15 cursor-pointer hover-lift"
               >
                 <div className="flex justify-between items-start mb-6">
                   <div className={`p-3 ${card.bgClass} rounded-md`}>
@@ -357,7 +357,7 @@ function AuthorityDashboardPage() {
                   <div className="space-y-4 pt-4">
                     <button
                       onClick={() => handleAction('approved')}
-                      className="w-full py-4 rounded-md bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold shadow-[0_4px_30px_rgba(0,238,252,0.3)] hover:brightness-110 active:scale-95 transition-all"
+                      className="w-full py-4 rounded-md bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold shadow-[0_4px_30px_rgba(0,238,252,0.3)] hover:brightness-110 active:scale-95 transition-all btn-shimmer"
                     >
                       Approve Property
                     </button>
@@ -392,8 +392,8 @@ function AuthorityDashboardPage() {
       </main>
 
       {/* Background Decorator Auras */}
-      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] pointer-events-none rounded-full"></div>
-      <div className="fixed bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-secondary/5 blur-[100px] pointer-events-none rounded-full"></div>
+      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] pointer-events-none rounded-full animate-float-slow"></div>
+      <div className="fixed bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-secondary/5 blur-[100px] pointer-events-none rounded-full animate-float"></div>
     </div>
   );
 }

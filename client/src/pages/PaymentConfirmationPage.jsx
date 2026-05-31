@@ -25,7 +25,7 @@ function PaymentConfirmationPage() {
   };
 
   return (
-    <div className="font-body text-on-surface min-h-screen flex flex-col overflow-x-hidden bg-background">
+    <div className="font-body text-on-surface min-h-screen flex flex-col overflow-x-hidden bg-background page-enter">
       {/* TopNavBar */}
       <nav className="fixed top-0 w-full z-50 flex justify-between items-center px-8 h-20 bg-surface/40 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
         <div className="flex items-center gap-12">
@@ -61,8 +61,8 @@ function PaymentConfirmationPage() {
       <main className="flex-grow flex items-center justify-center p-6 mt-20 relative">
         {/* Background Decorative Element */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-[10%] -right-[10%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px]"></div>
-          <div className="absolute -bottom-[10%] -left-[10%] w-[600px] h-[600px] bg-secondary/5 rounded-full blur-[120px]"></div>
+          <div className="absolute -top-[10%] -right-[10%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] animate-float-slow"></div>
+          <div className="absolute -bottom-[10%] -left-[10%] w-[600px] h-[600px] bg-secondary/5 rounded-full blur-[120px] animate-float"></div>
         </div>
 
         {/* Payment Modal/Card */}
@@ -164,7 +164,7 @@ function PaymentConfirmationPage() {
               {confirmState === 'idle' && (
                 <button
                   onClick={simulateConfirmation}
-                  className="glow-button w-full py-5 rounded-md bg-gradient-to-br from-primary to-primary-container text-on-primary font-display font-extrabold text-lg uppercase tracking-widest active:scale-95"
+                  className="glow-button w-full py-5 rounded-md bg-gradient-to-br from-primary to-primary-container text-on-primary font-display font-extrabold text-lg uppercase tracking-widest active:scale-95 btn-shimmer"
                 >
                   Confirm Payment
                 </button>

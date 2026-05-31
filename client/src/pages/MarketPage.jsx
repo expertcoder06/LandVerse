@@ -554,7 +554,7 @@ const MarketPage = () => {
   };
 
   return (
-    <div className="bg-surface text-on-surface font-body selection:bg-primary/30 min-h-screen relative overflow-x-hidden">
+    <div className="bg-surface text-on-surface font-body selection:bg-primary/30 min-h-screen relative overflow-x-hidden page-enter">
       <style>{styles}</style>
       <div className="fixed inset-0 grid-bg pointer-events-none z-0 opacity-40" />
 
@@ -608,7 +608,7 @@ const MarketPage = () => {
             <button 
               onClick={handleConnectWallet}
               disabled={isConnectingWallet}
-              className="bg-gradient-to-br from-primary to-primary-container text-on-primary font-headline font-bold px-6 py-2 rounded-full scale-95 active:scale-90 transition-all hover:shadow-[0_0_20px_rgba(143,245,255,0.4)] disabled:opacity-50"
+              className="bg-gradient-to-br from-primary to-primary-container text-on-primary font-headline font-bold px-6 py-2 rounded-full scale-95 active:scale-90 transition-all hover:shadow-[0_0_20px_rgba(143,245,255,0.4)] disabled:opacity-50 btn-shimmer"
             >
               {isConnectingWallet ? 'Connecting...' : 'Connect Wallet'}
             </button>
@@ -782,7 +782,7 @@ const MarketPage = () => {
             {sortedLands.map((land) => (
               <div 
                 key={land.id}
-                className="group relative bg-surface-container-low rounded-lg overflow-hidden transition-all duration-500 hover:-translate-y-2 border border-outline-variant/5 hover:border-primary/20 shadow-lg hover:shadow-2xl hover:shadow-primary/5"
+                className="group relative bg-surface-container-low rounded-lg overflow-hidden transition-all duration-500 hover:-translate-y-2 border border-outline-variant/5 hover:border-primary/20 shadow-lg hover:shadow-2xl hover:shadow-primary/5 hover-glow-border"
               >
                 {/* Image & Verified Tag */}
                 <div className="aspect-[4/3] overflow-hidden relative">
@@ -851,7 +851,7 @@ const MarketPage = () => {
                     ) : (
                       <button 
                         onClick={() => handleBuyNowClick(land)}
-                        className="flex-1 py-3 px-4 rounded-md bg-gradient-to-r from-primary to-primary-container text-on-primary font-headline text-sm font-bold shadow-lg shadow-primary/10 hover:shadow-primary/30 transition-all hover:scale-[1.02]"
+                        className="flex-1 py-3 px-4 rounded-md bg-gradient-to-r from-primary to-primary-container text-on-primary font-headline text-sm font-bold shadow-lg shadow-primary/10 hover:shadow-primary/30 transition-all hover:scale-[1.02] btn-shimmer"
                       >
                         Buy Now
                       </button>

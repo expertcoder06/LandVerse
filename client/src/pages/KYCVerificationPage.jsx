@@ -99,7 +99,7 @@ const KYCVerificationPage = () => {
   );
 
   return (
-    <div className="bg-surface text-on-surface font-body min-h-screen custom-scrollbar selection:bg-primary/30">
+    <div className="bg-surface text-on-surface font-body min-h-screen custom-scrollbar selection:bg-primary/30 page-enter">
       {/* Top Navigation Bar */}
       <nav className="fixed top-0 w-full z-50 bg-surface-variant/40 backdrop-blur-xl shadow-2xl shadow-primary/5 flex justify-between items-center px-8 py-4">
         <Link to="/" className="font-headline text-2xl font-bold tracking-tighter text-primary">
@@ -328,7 +328,7 @@ const KYCVerificationPage = () => {
                     disabled={!agreed || isSubmitting}
                     className={`w-full py-4 rounded-md font-headline font-bold uppercase tracking-widest flex items-center justify-center gap-3 transition-all active:scale-[0.98]
                       ${agreed
-                        ? 'bg-gradient-to-r from-primary to-primary-container text-on-primary-container hover:shadow-[0_0_30px_rgba(0,238,252,0.3)] cursor-pointer'
+                        ? 'bg-gradient-to-r from-primary to-primary-container text-on-primary-container hover:shadow-[0_0_30px_rgba(0,238,252,0.3)] cursor-pointer btn-shimmer'
                         : 'bg-surface-container-high text-on-surface-variant/40 cursor-not-allowed'
                       }`}
                   >
