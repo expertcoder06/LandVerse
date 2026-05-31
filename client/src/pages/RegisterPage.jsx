@@ -1,17 +1,35 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import axios from 'axios';
 
 // ─────────────────────────────────────────────
-// Mock IPFS upload – replace with real Pinata /
-// web3.storage call when ready
+// Real Pinata IPFS Upload
 // ─────────────────────────────────────────────
-const uploadToIPFS = (file) =>
-  new Promise((resolve) =>
-    setTimeout(() => {
-      resolve(`ipfs://Qm${Math.random().toString(36).slice(2).toUpperCase()}${file.name.replace(/\W/g, '')}`);
-    }, 900)
-  );
+const uploadToIPFS = async (file) => {
+  const url = `https://api.pinata.cloud/pinning/pinFileToIPFS`;
+  
+  // Create Form Data
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const pinataApiKey = import.meta.env.VITE_PINATA_API_KEY;
+  const pinataSecretApiKey = import.meta.env.VITE_PINATA_SECRET_API_KEY;
+  
+  if (!pinataApiKey || !pinataSecretApiKey) {
+    throw new Error('Pinata API Keys are missing in .env configuration');
+  }
+
+  const response = await axios.post(url, formData, {
+    headers: {
+      'pinata_api_key': pinataApiKey,
+      'pinata_secret_api_key': pinataSecretApiKey,
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return `ipfs://${response.data.IpfsHash}`;
+};
 
 // ─── Step indicator ──────────────────────────
 const steps = ['Account', 'Documents', 'Selfie'];
@@ -244,20 +262,20 @@ const RegisterPage = () => {
     setLoading(true);
 
     try {
-      // ── IPFS uploads (mock) ──────────────────
+      // ── Real IPFS uploads ──────────────────
       const [aadhaarHash, panHash, selfieHash] = await Promise.all([
         uploadToIPFS(aadhaarFile),
         uploadToIPFS(panFile),
         uploadToIPFS(selfieFile),
       ]);
-      console.log('IPFS hashes (mock):', { aadhaarHash, panHash, selfieHash });
-      // TODO: store hashes in user metadata / DB when IPFS is wired up
+      console.log('IPFS hashes uploaded:', { aadhaarHash, panHash, selfieHash });
 
-      // ── Supabase sign-up ─────────────────────
-      const walletAddress = '0x' + Array.from({ length: 39 }, () =>
+      // Generate a mock wallet address for onboarding (unless they connected one previously)
+      const walletAddress = '0x' + Array.from({ length: 40 }, () =>
         Math.floor(Math.random() * 16).toString(16)).join('');
 
-      const { error: signUpError } = await supabase.auth.signUp({
+      // Sign up the user in Supabase Auth
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -266,14 +284,38 @@ const RegisterPage = () => {
             role,
             phone,
             wallet_address: walletAddress,
-            // ipfs_aadhaar: aadhaarHash,  // uncomment when IPFS ready
-            // ipfs_pan: panHash,
-            // ipfs_selfie: selfieHash,
+            ipfs_aadhaar: aadhaarHash,
+            ipfs_pan: panHash,
+            ipfs_selfie: selfieHash,
           },
         },
       });
 
       if (signUpError) throw signUpError;
+
+      // Update the user's profile in the profiles table with the IPFS document urls and transition status to pending
+      const user = signUpData?.user;
+      if (user) {
+        const kycUrlString = JSON.stringify({
+          aadhaar: aadhaarHash,
+          pan: panHash,
+          selfie: selfieHash
+        });
+
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            kyc_document_url: kycUrlString,
+            kyc_submitted_at: new Date().toISOString(),
+            kyc_status: 'pending' // Transition status to pending so Registrar can review it!
+          })
+          .eq('id', user.id);
+
+        if (profileError) {
+          console.error('Error updating profiles table KYC details:', profileError);
+        }
+      }
+
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Registration failed.');

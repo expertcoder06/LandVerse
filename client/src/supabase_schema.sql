@@ -294,10 +294,18 @@ CREATE POLICY update_profiles_self ON public.profiles
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
-CREATE POLICY authority_profiles_manage ON public.profiles
-  FOR ALL
-  USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'authority')
-  WITH CHECK ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'authority');
+CREATE POLICY authority_profiles_insert ON public.profiles
+  FOR INSERT
+  WITH CHECK ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'authority'::user_role);
+
+CREATE POLICY authority_profiles_update ON public.profiles
+  FOR UPDATE
+  USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'authority'::user_role)
+  WITH CHECK ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'authority'::user_role);
+
+CREATE POLICY authority_profiles_delete ON public.profiles
+  FOR DELETE
+  USING ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'authority'::user_role);
 
 -- properties policies
 CREATE POLICY select_properties ON public.properties

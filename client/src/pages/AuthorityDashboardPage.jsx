@@ -2,39 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
-const STAT_CARDS = [
-  {
-    id: 'kyc',
-    icon: 'how_to_reg',
-    label: 'Pending KYC Requests',
-    value: '1,284',
-    change: '+12%',
-    status: 'up',
-    colorClass: 'text-primary',
-    bgClass: 'bg-primary/10',
-  },
-  {
-    id: 'land',
-    icon: 'verified_user',
-    label: 'Pending Land Verifications',
-    value: '456',
-    change: 'STABLE',
-    status: 'stable',
-    colorClass: 'text-secondary',
-    bgClass: 'bg-secondary/10',
-  },
-  {
-    id: 'fraud',
-    icon: 'report_problem',
-    label: 'Fraud Detection Alerts',
-    value: '21',
-    change: 'URGENT',
-    status: 'urgent',
-    colorClass: 'text-error',
-    bgClass: 'bg-error/10',
-  },
-];
-
 const SIDEBAR_ITEMS = [
   { icon: 'dashboard', label: 'Dashboard', id: 'dashboard' },
   { icon: 'how_to_reg', label: 'KYC Requests', id: 'kyc' },
@@ -51,6 +18,62 @@ function AuthorityDashboardPage() {
   const [adminDetails, setAdminDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Supabase dynamic state variables
+  const [stats, setStats] = useState({
+    kycCount: 0,
+    landCount: 0,
+    fraudCount: 0
+  });
+  const [pendingProperties, setPendingProperties] = useState([]);
+  const [activePropertyIndex, setActivePropertyIndex] = useState(0);
+
+  const fetchStats = async () => {
+    try {
+      const { count: kycPending } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('kyc_status', 'pending');
+
+      const { count: landPending } = await supabase
+        .from('properties')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      const { count: failedTxs } = await supabase
+        .from('transactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'failed');
+
+      setStats({
+        kycCount: kycPending || 0,
+        landCount: landPending || 0,
+        fraudCount: failedTxs || 0
+      });
+    } catch (err) {
+      console.error('Error fetching statistics:', err);
+    }
+  };
+
+  const fetchPendingProperties = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*, profiles:owner_id(*)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setPendingProperties(data || []);
+      setActivePropertyIndex(0);
+    } catch (err) {
+      console.error('Error fetching pending properties:', err);
+    }
+  };
+
+  const loadDashboardData = async () => {
+    await Promise.all([fetchStats(), fetchPendingProperties()]);
+  };
 
   useEffect(() => {
     const fetchAdminProfile = async () => {
@@ -83,6 +106,7 @@ function AuthorityDashboardPage() {
 
           if (profile && profile.role === 'authority') {
             setAdminDetails({
+              id: profile.id,
               full_name: profile.full_name,
               role: profile.role,
               email: user.email
@@ -97,6 +121,9 @@ function AuthorityDashboardPage() {
         } else {
           setAdminDetails(admin);
         }
+
+        // Load the live Supabase dynamic data
+        await loadDashboardData();
       } catch (err) {
         console.error('Error fetching admin profile:', err);
         setError('Error establishing server connection.');
@@ -118,11 +145,67 @@ function AuthorityDashboardPage() {
     }
   };
 
-  const handleAction = (status) => {
-    setCaseStatus(status);
-    setTimeout(() => {
-      alert(`Case Registry Decision: ${status.toUpperCase()}`);
-    }, 100);
+  const handleAction = async (status, feedback = '') => {
+    const activeProperty = pendingProperties[activePropertyIndex];
+    if (!activeProperty) return;
+
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No authenticated user session found.');
+
+      const updatePayload = {
+        status: status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : 'changes_requested',
+        verified_at: new Date().toISOString(),
+        verified_by: user.id
+      };
+
+      if (feedback) {
+        updatePayload.rejection_reason = feedback;
+      } else if (status === 'changes') {
+        updatePayload.status = 'changes_requested';
+        updatePayload.rejection_reason = 'Feedback or changes requested.';
+      } else if (status === 'rejected') {
+        updatePayload.rejection_reason = 'Property rejected due to boundary/validation issues.';
+      }
+
+      // Update property
+      const { error: propError } = await supabase
+        .from('properties')
+        .update(updatePayload)
+        .eq('id', activeProperty.id);
+
+      if (propError) throw propError;
+
+      // Update application
+      const { data: landApp } = await supabase
+        .from('land_applications')
+        .select('id')
+        .eq('property_id', activeProperty.id)
+        .eq('status', 'pending')
+        .maybeSingle();
+
+      if (landApp) {
+        await supabase
+          .from('land_applications')
+          .update({
+            status: updatePayload.status,
+            reviewed_by: user.id,
+            reviewed_at: new Date().toISOString(),
+            authority_feedback: feedback || (status === 'approved' ? 'Approved by Registrar Authority.' : 'Status changed by authority.')
+          })
+          .eq('id', landApp.id);
+      }
+
+      alert(`Property successfully ${status === 'changes' ? 'marked for changes' : status}!`);
+      setCaseStatus(status);
+      await loadDashboardData();
+    } catch (err) {
+      console.error('Registry decision execution error:', err);
+      alert(err.message || 'Failed to update property verification status.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -228,7 +311,38 @@ function AuthorityDashboardPage() {
         <section className="p-12 space-y-12 max-w-7xl mx-auto flex-grow">
           {/* Metric Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {STAT_CARDS.map((card) => (
+            {[
+              {
+                id: 'kyc',
+                icon: 'how_to_reg',
+                label: 'Pending KYC Requests',
+                value: stats.kycCount,
+                change: stats.kycCount > 0 ? `${stats.kycCount} Pending` : 'Stable',
+                status: stats.kycCount > 0 ? 'urgent' : 'stable',
+                colorClass: 'text-primary',
+                bgClass: 'bg-primary/10',
+              },
+              {
+                id: 'land',
+                icon: 'verified_user',
+                label: 'Pending Land Verifications',
+                value: stats.landCount,
+                change: stats.landCount > 0 ? 'Action Required' : 'Cleared',
+                status: stats.landCount > 0 ? 'urgent' : 'stable',
+                colorClass: 'text-secondary',
+                bgClass: 'bg-secondary/10',
+              },
+              {
+                id: 'fraud',
+                icon: 'report_problem',
+                label: 'Failed Transaction Alerts',
+                value: stats.fraudCount,
+                change: stats.fraudCount > 0 ? 'Attention' : 'Secure',
+                status: stats.fraudCount > 0 ? 'urgent' : 'stable',
+                colorClass: 'text-error',
+                bgClass: 'bg-error/10',
+              },
+            ].map((card) => (
               <div
                 key={card.id}
                 className="surface-container-low p-8 rounded-lg relative overflow-hidden group hover:bg-surface-container-high transition-all duration-300 border border-outline-variant/15 cursor-pointer hover-lift"
@@ -239,9 +353,9 @@ function AuthorityDashboardPage() {
                   </div>
                   <span
                     className={`flex items-center gap-1 text-[0.7rem] font-label
-                      ${card.status === 'up' ? 'text-tertiary' : card.status === 'urgent' ? 'text-error' : 'text-on-surface-variant'}`}
+                      ${card.status === 'up' || card.status === 'urgent' ? 'text-error' : 'text-on-surface-variant'}`}
                   >
-                    {card.status === 'up' && <span className="material-symbols-outlined text-[1rem]">trending_up</span>}
+                    {(card.status === 'up' || card.status === 'urgent') && <span className="material-symbols-outlined text-[1rem]">trending_up</span>}
                     {card.change}
                   </span>
                 </div>
@@ -266,127 +380,186 @@ function AuthorityDashboardPage() {
                   <div className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></div>
                   Live Ledger Sync
                 </div>
-                <span>Case #REV-00912</span>
+                {pendingProperties.length > 0 && (
+                  <span>Case #{pendingProperties[activePropertyIndex]?.id.substring(0, 8).toUpperCase()}</span>
+                )}
               </div>
             </div>
-            <div className="grid grid-cols-12 gap-8">
-              {/* Left Content: Property & Details */}
-              <div className="col-span-12 lg:col-span-8 glass-card rounded-lg p-10 border border-primary/5">
-                <div className="flex flex-col md:flex-row justify-between gap-12">
-                  <div className="space-y-10 flex-1">
-                    {/* Owner Section */}
-                    <div className="flex items-center gap-6">
-                      <img
-                        alt="Alex Sterling Avatar"
-                        className="w-16 h-16 rounded-full object-cover border border-outline-variant/15"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCm7gAMTnBgnEoGSIlB1WXRjNlzvLmP98IuvjRK1s5pGm-A_VpvKKZjTZDI43rR-SWsA2mkZUyzcVcbqyHbPUoooILnYDyvDNE4ofoe8lVN-9ZQVuyVcf4DCoUGvOpRscPgP1DMPfHu_zVhsmscVKTi3t3Te8TOyxDMsN7MZMnPd1yQI-xNDM17AskdsJt8AjUeKgkFG2a2zctRfJCJWzlHGq5oCJEyVD5BOODxiec7gzM0g2XWPvyzaZq-1kjyJyvpbrh5yecpOPEn"
-                      />
+
+            {pendingProperties.length > 0 ? (
+              <div className="grid grid-cols-12 gap-8">
+                {/* Verification Queue Sidebar (shows if > 1 items are in queue) */}
+                {pendingProperties.length > 1 && (
+                  <div className="col-span-12 lg:col-span-3 flex flex-col gap-4 bg-surface-container-low p-6 rounded-lg border border-outline-variant/10">
+                    <p className="font-label uppercase text-[0.65rem] text-on-surface-variant tracking-wider px-2">Verification Queue ({pendingProperties.length})</p>
+                    <div className="flex flex-col gap-2 max-h-[480px] overflow-y-auto">
+                      {pendingProperties.map((prop, idx) => (
+                        <button
+                          key={prop.id}
+                          onClick={() => setActivePropertyIndex(idx)}
+                          className={`p-4 rounded-md text-left transition-all border flex flex-col gap-1 active:scale-95 cursor-pointer
+                            ${idx === activePropertyIndex
+                              ? 'bg-primary/10 border-primary/30 text-primary font-bold shadow-md shadow-primary/5'
+                              : 'bg-surface-container hover:bg-surface-container-high border-outline-variant/10 text-on-surface'
+                            }`}
+                        >
+                          <span className="text-sm truncate font-display">{prop.name}</span>
+                          <span className="text-[10px] font-mono text-on-surface-variant">Plot: {prop.plot_number}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Left Content: Property & Details */}
+                <div className={`col-span-12 ${pendingProperties.length > 1 ? 'lg:col-span-6' : 'lg:col-span-8'} glass-card rounded-lg p-10 border border-primary/5`}>
+                  <div className="flex flex-col md:flex-row justify-between gap-12">
+                    <div className="space-y-10 flex-1">
+                      {/* Owner Section */}
+                      <div className="flex items-center gap-6">
+                        <img
+                          alt="Owner Avatar"
+                          className="w-16 h-16 rounded-full object-cover border border-outline-variant/15"
+                          src="https://lh3.googleusercontent.com/aida-public/AB6AXuCm7gAMTnBgnEoGSIlB1WXRjNlzvLmP98IuvjRK1s5pGm-A_VpvKKZjTZDI43rR-SWsA2mkZUyzcVcbqyHbPUoooILnYDyvDNE4ofoe8lVN-9ZQVuyVcf4DCoUGvOpRscPgP1DMPfHu_zVhsmscVKTi3t3Te8TOyxDMsN7MZMnPd1yQI-xNDM17AskdsJt8AjUeKgkFG2a2zctRfJCJWzlHGq5oCJEyVD5BOODxiec7gzM0g2XWPvyzaZq-1kjyJyvpbrh5yecpOPEn"
+                        />
+                        <div>
+                          <p className="font-label uppercase text-[0.6rem] text-on-surface-variant tracking-[0.2em]">Owner Details</p>
+                          <h4 className="text-2xl font-display font-bold">
+                            {pendingProperties[activePropertyIndex]?.profiles?.full_name || 'Anonymous User'}
+                          </h4>
+                          <p className="font-label text-xs font-mono text-primary/70 mt-1">
+                            ID: {pendingProperties[activePropertyIndex]?.profiles?.wallet_address 
+                              ? `${pendingProperties[activePropertyIndex].profiles.wallet_address.substring(0, 7)}...${pendingProperties[activePropertyIndex].profiles.wallet_address.substring(38)}`
+                              : 'No Connected Wallet'}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Specs Section */}
+                      <div className="grid grid-cols-2 gap-8 py-8 border-y border-outline-variant/10">
+                        <div>
+                          <p className="font-label uppercase text-[0.6rem] text-on-surface-variant tracking-[0.2em]">Plot Reference</p>
+                          <p className="text-xl font-headline font-bold mt-1">
+                            #{pendingProperties[activePropertyIndex]?.plot_number || 'N/A'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="font-label uppercase text-[0.6rem] text-on-surface-variant tracking-[0.2em]">Total Area</p>
+                          <p className="text-xl font-headline font-bold mt-1">
+                            {pendingProperties[activePropertyIndex]?.area?.toLocaleString()} {pendingProperties[activePropertyIndex]?.area_unit}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Documents Section */}
                       <div>
-                        <p className="font-label uppercase text-[0.6rem] text-on-surface-variant tracking-[0.2em]">Owner Details</p>
-                        <h4 className="text-2xl font-display font-bold">Alex Sterling</h4>
-                        <p className="font-label text-xs font-mono text-primary/70 mt-1">ID: OX82F...A1E</p>
+                        <p className="font-label uppercase text-[0.6rem] text-on-surface-variant tracking-[0.2em] mb-4">Document Gallery</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="surface-container p-4 rounded-md flex items-center justify-between border border-outline-variant/15 hover:bg-surface-container-highest transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded bg-primary/5 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-primary">description</span>
+                              </div>
+                              <span className="text-sm font-medium">Title Deed</span>
+                            </div>
+                            <a
+                              href={pendingProperties[activePropertyIndex]?.title_deed_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[0.7rem] uppercase font-label font-bold text-primary hover:underline"
+                            >
+                              View File
+                            </a>
+                          </div>
+                          <div className="surface-container p-4 rounded-md flex items-center justify-between border border-outline-variant/15 hover:bg-surface-container-highest transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded bg-secondary/5 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-secondary">verified</span>
+                              </div>
+                              <span className="text-sm font-medium">Ownership Proof</span>
+                            </div>
+                            <a
+                              href={pendingProperties[activePropertyIndex]?.ownership_proof_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[0.7rem] uppercase font-label font-bold text-secondary hover:underline"
+                            >
+                              View File
+                            </a>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    {/* Specs Section */}
-                    <div className="grid grid-cols-2 gap-8 py-8 border-y border-outline-variant/10">
-                      <div>
-                        <p className="font-label uppercase text-[0.6rem] text-on-surface-variant tracking-[0.2em]">Plot Reference</p>
-                        <p className="text-xl font-headline font-bold mt-1">#PL-881</p>
+                    {/* Map Section */}
+                    <div className="w-full md:w-80 space-y-4">
+                      <p className="font-label uppercase text-[0.6rem] text-on-surface-variant tracking-[0.2em]">Geospatial Preview</p>
+                      <div className="aspect-square w-full rounded-lg overflow-hidden relative group border border-outline-variant/20">
+                        <img
+                          alt="Geospatial Map"
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOJOGV7JNQXaM0gwFdcXYg4QgXeqeICK4swRAx5_GT5BAONNpVbxaJ8ppuqepbPOkOdwoAKKGj_jlBlIMyJJB1uiwKDGnIugbHrGFELbZEJTWrZPCah6T15gTZCo7o3kZbZBNWtqyfooZgSV7--U7G0jUkw_3DNHrbj0ASFE3vdDFGgnWr4hb9yFfJK7IB9vEoy75pWyMyzUf9dsvzxNkUnDfG4pL8PhMAmmjrOffgML38gD3_JYa02qDhMlg31q8qbuXLgAO02LxX"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent"></div>
                       </div>
-                      <div>
-                        <p className="font-label uppercase text-[0.6rem] text-on-surface-variant tracking-[0.2em]">Total Area</p>
-                        <p className="text-xl font-headline font-bold mt-1">1,250 SQ. FT.</p>
-                      </div>
-                    </div>
-                    {/* Documents Section */}
-                    <div>
-                      <p className="font-label uppercase text-[0.6rem] text-on-surface-variant tracking-[0.2em] mb-4">Document Gallery</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="surface-container p-4 rounded-md flex items-center justify-between border border-outline-variant/15 hover:bg-surface-container-highest transition-colors">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded bg-primary/5 flex items-center justify-center">
-                              <span className="material-symbols-outlined text-primary">description</span>
-                            </div>
-                            <span className="text-sm font-medium">Title Deed</span>
-                          </div>
-                          <button onClick={() => alert('Viewing Title Deed')} className="text-[0.7rem] uppercase font-label font-bold text-primary hover:underline">
-                            View File
-                          </button>
-                        </div>
-                        <div className="surface-container p-4 rounded-md flex items-center justify-between border border-outline-variant/15 hover:bg-surface-container-highest transition-colors">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded bg-secondary/5 flex items-center justify-center">
-                              <span className="material-symbols-outlined text-secondary">verified</span>
-                            </div>
-                            <span className="text-sm font-medium">Ownership Proof</span>
-                          </div>
-                          <button onClick={() => alert('Viewing Ownership Proof')} className="text-[0.7rem] uppercase font-label font-bold text-secondary hover:underline">
-                            View File
-                          </button>
-                        </div>
+                      <div className="flex items-center gap-2 text-[0.6rem] font-mono text-on-surface-variant justify-center bg-surface-container-lowest py-2 rounded">
+                        {pendingProperties[activePropertyIndex]?.latitude}° N, {pendingProperties[activePropertyIndex]?.longitude}° W
                       </div>
                     </div>
                   </div>
-                  {/* Map Section */}
-                  <div className="w-full md:w-80 space-y-4">
-                    <p className="font-label uppercase text-[0.6rem] text-on-surface-variant tracking-[0.2em]">Geospatial Preview</p>
-                    <div className="aspect-square w-full rounded-lg overflow-hidden relative group border border-outline-variant/20">
-                      <img
-                        alt="Geospatial Map"
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOJOGV7JNQXaM0gwFdcXYg4QgXeqeICK4swRAx5_GT5BAONNpVbxaJ8ppuqepbPOkOdwoAKKGj_jlBlIMyJJB1uiwKDGnIugbHrGFELbZEJTWrZPCah6T15gTZCo7o3kZbZBNWtqyfooZgSV7--U7G0jUkw_3DNHrbj0ASFE3vdDFGgnWr4hb9yFfJK7IB9vEoy75pWyMyzUf9dsvzxNkUnDfG4pL8PhMAmmjrOffgML38gD3_JYa02qDhMlg31q8qbuXLgAO02LxX"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent"></div>
-                      <button className="absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-2 bg-surface-bright/90 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-widest border border-white/10 hover:bg-primary hover:text-on-primary transition-all">
-                        Open Map
+                </div>
+
+                {/* Right Sidebar: Decision Hub */}
+                <div className="col-span-12 lg:col-span-4 flex flex-col gap-8">
+                  <div className="surface-container p-8 rounded-lg border border-outline-variant/15 flex-grow flex flex-col justify-center space-y-6">
+                    <h3 className="text-xl font-display font-bold">Registry Decision</h3>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">
+                      Review all associated metadata and blockchain hash verification before final submission. Approved records are immutable on the MainNet.
+                    </p>
+                    <div className="space-y-4 pt-4">
+                      <button
+                        onClick={() => handleAction('approved')}
+                        className="w-full py-4 rounded-md bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold shadow-[0_4px_30px_rgba(0,238,252,0.3)] hover:brightness-110 active:scale-95 transition-all btn-shimmer cursor-pointer"
+                      >
+                        Approve Property
+                      </button>
+                      <button
+                        onClick={() => handleAction('changes')}
+                        className="w-full py-4 rounded-md border border-outline-variant/15 text-on-surface font-bold hover:bg-surface-variant active:scale-95 transition-all cursor-pointer"
+                      >
+                        Request Changes
+                      </button>
+                      <button
+                        onClick={() => handleAction('rejected')}
+                        className="w-full py-4 rounded-md bg-error/10 text-error border border-error/20 font-bold hover:bg-error hover:text-on-error active:scale-95 transition-all cursor-pointer"
+                      >
+                        Reject Entry
                       </button>
                     </div>
-                    <div className="flex items-center gap-2 text-[0.6rem] font-mono text-on-surface-variant justify-center bg-surface-container-lowest py-2 rounded">
-                      51.5074° N, 0.1278° W
+                  </div>
+                  {/* Secondary Info Card */}
+                  <div className="surface-container-low p-6 rounded-lg border-l-4 border-secondary/50">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="material-symbols-outlined text-secondary text-sm">info</span>
+                      <p className="text-xs font-bold uppercase tracking-widest text-secondary">Provisional Alert</p>
                     </div>
+                    <p className="text-xs text-on-surface-variant">
+                      Ensure the GPS Polygon boundaries do not overlap with neighboring surveyed properties. Check title deed hash integrity against local archives.
+                    </p>
                   </div>
                 </div>
               </div>
-              {/* Right Sidebar: Decision Hub */}
-              <div className="col-span-12 lg:col-span-4 flex flex-col gap-8">
-                <div className="surface-container p-8 rounded-lg border border-outline-variant/15 flex-grow flex flex-col justify-center space-y-6">
-                  <h3 className="text-xl font-display font-bold">Registry Decision</h3>
-                  <p className="text-on-surface-variant text-sm leading-relaxed">
-                    Review all associated metadata and blockchain hash verification before final submission. Approved records are immutable on the MainNet.
-                  </p>
-                  <div className="space-y-4 pt-4">
-                    <button
-                      onClick={() => handleAction('approved')}
-                      className="w-full py-4 rounded-md bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold shadow-[0_4px_30px_rgba(0,238,252,0.3)] hover:brightness-110 active:scale-95 transition-all btn-shimmer"
-                    >
-                      Approve Property
-                    </button>
-                    <button
-                      onClick={() => handleAction('changes')}
-                      className="w-full py-4 rounded-md border border-outline-variant/15 text-on-surface font-bold hover:bg-surface-variant active:scale-95 transition-all"
-                    >
-                      Request Changes
-                    </button>
-                    <button
-                      onClick={() => handleAction('rejected')}
-                      className="w-full py-4 rounded-md bg-error/10 text-error border border-error/20 font-bold hover:bg-error hover:text-on-error active:scale-95 transition-all"
-                    >
-                      Reject Entry
-                    </button>
+            ) : (
+              <div className="w-full">
+                <div className="flex flex-col items-center justify-center p-16 text-center bg-surface-container-low rounded-lg border border-outline-variant/15 shadow-2xl relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent pointer-events-none" />
+                  <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mb-6 border border-success/20 text-success">
+                    <span className="material-symbols-outlined text-4xl">verified</span>
                   </div>
-                </div>
-                {/* Secondary Info Card */}
-                <div className="surface-container-low p-6 rounded-lg border-l-4 border-secondary/50">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="material-symbols-outlined text-secondary text-sm">info</span>
-                    <p className="text-xs font-bold uppercase tracking-widest text-secondary">Provisional Alert</p>
-                  </div>
-                  <p className="text-xs text-on-surface-variant">
-                    Cross-reference with the Department of Urban Development (DUD) suggests a minor boundary overlap with Plot #PL-880. Proceed with caution.
+                  <h4 className="text-2xl font-display font-bold mb-2">Registry Queue Cleared</h4>
+                  <p className="text-on-surface-variant max-w-md mx-auto font-body text-sm leading-relaxed">
+                    There are no pending land registration requests in the queue at the moment. All submitted land deeds have been verified and integrated into the ledger.
                   </p>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </section>
       </main>
