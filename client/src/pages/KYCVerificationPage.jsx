@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 
 const KYCVerificationPage = () => {
   const navigate = useNavigate();
+  const [walletAddress, setWalletAddress] = useState('');
   
   // Document state variables
   const [titleDeedFile, setTitleDeedFile] = useState(null);
@@ -25,6 +27,25 @@ const KYCVerificationPage = () => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('wallet_address')
+            .eq('id', session.user.id)
+            .single();
+          if (profile?.wallet_address) {
+            setWalletAddress(profile.wallet_address);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching KYC profile:', err);
+      }
+    };
+    fetchProfile();
+
     const timer = setTimeout(() => setIsLoaded(true), 100);
 
     // Atmospheric parallax on scroll
@@ -155,13 +176,20 @@ const KYCVerificationPage = () => {
           <a href="#features" className="font-headline tracking-wide uppercase text-sm text-on-surface-variant hover:text-on-surface transition-colors">Features</a>
         </div>
         <div className="flex items-center gap-4">
-          <Link
-            to="/connect-wallet"
-            className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-md font-headline text-sm tracking-wide uppercase hover:bg-primary/20 transition-all active:scale-95 duration-200"
-          >
-            <span className="material-symbols-outlined text-lg">account_balance_wallet</span>
-            Connect Wallet
-          </Link>
+          {walletAddress ? (
+            <div className="flex items-center gap-2 bg-success/10 text-success border border-success/20 px-4 py-2 rounded-md font-headline text-sm font-bold shadow-[0_0_15px_rgba(46,204,113,0.15)]">
+              <span className="material-symbols-outlined text-lg">check_circle</span>
+              {walletAddress.substring(0, 5)}...{walletAddress.substring(walletAddress.length - 4)}
+            </div>
+          ) : (
+            <Link
+              to="/connect-wallet"
+              className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-md font-headline text-sm tracking-wide uppercase hover:bg-primary/20 transition-all active:scale-95 duration-200"
+            >
+              <span className="material-symbols-outlined text-lg">account_balance_wallet</span>
+              Connect Wallet
+            </Link>
+          )}
         </div>
       </nav>
 

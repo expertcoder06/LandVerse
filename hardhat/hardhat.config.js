@@ -1,6 +1,14 @@
 import hardhatToolboxMochaEthers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
-import "dotenv/config";
 import { defineConfig } from "hardhat/config";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+import dotenv from "dotenv";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Explicitly load .env relative to this config file
+dotenv.config({ path: resolve(__dirname, ".env") });
 
 // Environment variables loaded from .env
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL;
@@ -27,7 +35,7 @@ export default defineConfig({
     // Sepolia Testnet
     sepolia: {
       type: "http",
-      url: SEPOLIA_RPC_URL || "",
+      url: SEPOLIA_RPC_URL || "https://eth-sepolia.g.alchemy.com/v2/placeholder",
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
     },
   },
