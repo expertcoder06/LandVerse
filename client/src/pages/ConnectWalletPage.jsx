@@ -210,10 +210,10 @@ const ConnectWalletPage = () => {
                 <span className="text-primary font-semibold">{connectedWallet}</span> connected successfully.
               </p>
               <Link
-                to="/kyc"
+                to="/dashboard"
                 className="w-full primary-gradient text-on-primary-container py-4 rounded-md font-headline font-bold uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-[0_0_30px_rgba(0,238,252,0.3)] transition-all active:scale-[0.98] btn-shimmer"
               >
-                Continue to KYC Verification
+                Continue to Dashboard
                 <span className="material-symbols-outlined">arrow_forward</span>
               </Link>
             </div>

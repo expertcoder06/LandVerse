@@ -38,8 +38,8 @@ const FileZone = ({ id, label, file, onFile, accept = 'image/*,.pdf' }) => (
     <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant" htmlFor={id}>{label}</label>
     <label
       htmlFor={id}
-      className={`flex flex-col items-center justify-center w-full h-28 rounded-md border-2 border-dashed cursor-pointer transition-all duration-200
-        ${file ? 'border-primary/60 bg-primary/5' : 'border-surface-container-high hover:border-primary/40 bg-surface-container-lowest'}`}
+      className={`glass-panel backdrop-blur-md flex flex-col items-center justify-center w-full h-28 rounded-md border-2 border-dashed cursor-pointer transition-all duration-200
+        ${file ? 'border-primary/60 bg-primary/10' : 'border-white/10 hover:border-primary/40 bg-surface-container-lowest/30 hover:bg-surface-container-lowest/50'}`}
     >
       {file ? (
         <div className="flex flex-col items-center gap-1">
@@ -110,7 +110,7 @@ const SelfieWidget = ({ onCapture }) => {
   return (
     <div className="space-y-3">
       <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant block">Live Selfie — Face Verification</label>
-      <div className="rounded-md border-2 border-dashed border-surface-container-high bg-surface-container-lowest flex flex-col items-center justify-center min-h-[220px] p-4 gap-4 transition-all duration-300">
+      <div className="glass-panel backdrop-blur-md rounded-md border-2 border-dashed border-white/10 bg-surface-container-lowest/30 flex flex-col items-center justify-center min-h-[220px] p-4 gap-4 transition-all duration-300">
 
         {/* idle */}
         {stage === 'idle' && (
@@ -181,6 +181,10 @@ const SelfieWidget = ({ onCapture }) => {
 const RegisterPage = () => {
   const [step, setStep] = useState(0);
   const [role, setRole] = useState('owner');
+
+  // Scroll animations
+  const [headerRef, isHeaderVisible] = useScrollAnimation();
+  const [cardRef, isCardVisible] = useScrollAnimation({ threshold: 0.1 });
 
   // step 0
   const [fullName, setFullName] = useState('');
@@ -261,7 +265,7 @@ const RegisterPage = () => {
       });
 
       if (signUpError) throw signUpError;
-      navigate('/dashboard');
+      navigate('/connect-wallet');
     } catch (err) {
       setError(err.message || 'Registration failed.');
     } finally {
@@ -271,11 +275,9 @@ const RegisterPage = () => {
 
   return (
     <div className="bg-background text-on-background font-body min-h-screen flex flex-col selection:bg-primary selection:text-on-primary-container bg-mesh page-enter">
-      {/* TopAppBar */}
-    <div className="bg-background text-on-background font-body min-h-screen flex flex-col selection:bg-primary selection:text-on-primary-container bg-mesh">
       {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-surface-variant/40 backdrop-blur-2xl shadow-[0_20px_40px_rgba(0,0,0,0.4)] h-20 px-8 flex justify-between items-center">
-        <Link to="/" className="text-2xl font-headline font-bold tracking-widest text-primary">LandVerse</Link>
+      <header className="fixed top-0 w-full z-50 bg-surface-variant/40 backdrop-blur-2xl shadow-[0_20px_40px_rgba(0,0,0,0.4)] h-20 px-8 flex justify-between items-center border-b border-white/5">
+        <Link to="/" className="text-2xl font-headline font-bold tracking-widest text-primary hover:text-primary-dim transition-colors">LandVerse</Link>
         <Link to="/login" className="text-primary font-bold hover:text-primary-dim transition-colors duration-300">Login</Link>
       </header>
 
@@ -285,21 +287,16 @@ const RegisterPage = () => {
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/10 rounded-full blur-[120px] animate-float"></div>
         <div className="absolute inset-0 grid-bg opacity-20 pointer-events-none" />
         
-        <section className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-8 glass-card glass-card-interactive rounded-lg overflow-hidden relative z-10 shadow-2xl hover-glow-border">
-          {/* Left Side: Editorial Content */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/10 rounded-full blur-[120px]" />
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/10 rounded-full blur-[120px]" />
-
-        <section className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-8 glass-card glass-card-interactive rounded-lg overflow-hidden relative z-10 shadow-2xl">
+        <section ref={cardRef} className={`w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-8 glass-card glass-card-interactive rounded-lg overflow-hidden relative z-10 shadow-2xl hover-glow-border scroll-reveal-scale ${isCardVisible ? 'visible' : ''}`}>
           {/* Left panel */}
-          <div className="hidden lg:flex flex-col justify-between p-12 bg-surface-container-low relative overflow-hidden">
-            <div className="relative z-10">
-              <h1 className="font-display text-5xl font-bold leading-tight mb-6 tracking-tight">Join the Digital <span className="text-primary">Frontier</span></h1>
+          <div className="hidden lg:flex flex-col justify-between p-12 bg-surface-container-low/40 backdrop-blur-md relative overflow-hidden border-r border-white/5">
+            <div className="relative z-10 scroll-reveal stagger-1 visible">
+              <h1 className="font-display text-5xl font-bold leading-tight mb-6 tracking-tight">Join the Digital <span className="text-primary text-glow">Frontier</span></h1>
               <p className="text-on-surface-variant text-lg leading-relaxed max-w-md">
                 Step into a decentralised ecosystem where property rights are immutable. Register to start managing or acquiring digital land on the Ethereal Ledger.
               </p>
             </div>
-            <div className="relative z-10 space-y-6">
+            <div className="relative z-10 space-y-6 scroll-reveal stagger-2 visible">
               {[
                 { icon: 'verified_user', color: 'text-primary', title: 'Immutable Ownership', sub: 'Secured by the protocol ledger.' },
                 { icon: 'account_balance_wallet', color: 'text-secondary', title: 'Seamless Transactions', sub: 'Direct peer-to-peer digital land exchange.' },
@@ -323,8 +320,8 @@ const RegisterPage = () => {
           </div>
 
           {/* Right panel */}
-          <div className="p-8 md:p-12 overflow-y-auto">
-            <div className="mb-6">
+          <div className="p-8 md:p-12 overflow-y-auto bg-surface-container-low/10 backdrop-blur-sm">
+            <div className="mb-6 scroll-reveal stagger-1 visible">
               <h2 className="font-display text-3xl font-bold mb-1">Create Account</h2>
               <p className="text-on-surface-variant text-sm">Provide your details to initiate registry access.</p>
             </div>
@@ -352,54 +349,46 @@ const RegisterPage = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 scroll-reveal stagger-3 visible">
                   <div className="space-y-2">
                     <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant" htmlFor="name">Full Name</label>
-                    <input className="w-full bg-surface-container-lowest border-none rounded-sm px-4 py-3 text-on-surface focus:ring-1 focus:ring-primary-dim placeholder:text-outline/40"
+                    <input className="w-full glass-panel bg-surface-container-lowest/50 backdrop-blur-md border border-white/5 rounded-sm px-4 py-3 text-on-surface focus:ring-1 focus:ring-primary-dim placeholder:text-outline/40 transition-all hover:bg-surface-container-lowest/80"
                       id="name" placeholder="Alex Sterling" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
                     <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant" htmlFor="phone">Phone Number</label>
-                    <input className="w-full bg-surface-container-lowest border-none rounded-sm px-4 py-3 text-on-surface focus:ring-1 focus:ring-primary-dim placeholder:text-outline/40"
+                    <input className="w-full glass-panel bg-surface-container-lowest/50 backdrop-blur-md border border-white/5 rounded-sm px-4 py-3 text-on-surface focus:ring-1 focus:ring-primary-dim placeholder:text-outline/40 transition-all hover:bg-surface-container-lowest/80"
                       id="phone" placeholder="+91 98765 43210" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 scroll-reveal stagger-4 visible">
                   <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant" htmlFor="email">Email Address</label>
-                  <input className="w-full bg-surface-container-lowest border-none rounded-sm px-4 py-3 text-on-surface focus:ring-1 focus:ring-primary-dim placeholder:text-outline/40"
+                  <input className="w-full glass-panel bg-surface-container-lowest/50 backdrop-blur-md border border-white/5 rounded-sm px-4 py-3 text-on-surface focus:ring-1 focus:ring-primary-dim placeholder:text-outline/40 transition-all hover:bg-surface-container-lowest/80"
                     id="email" placeholder="alex@protocol.eth" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 scroll-reveal stagger-5 visible">
                   <div className="space-y-2">
                     <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant" htmlFor="password">Password</label>
-                    <input className="w-full bg-surface-container-lowest border-none rounded-sm px-4 py-3 text-on-surface focus:ring-1 focus:ring-primary-dim placeholder:text-outline/40"
+                    <input className="w-full glass-panel bg-surface-container-lowest/50 backdrop-blur-md border border-white/5 rounded-sm px-4 py-3 text-on-surface focus:ring-1 focus:ring-primary-dim placeholder:text-outline/40 transition-all hover:bg-surface-container-lowest/80"
                       id="password" placeholder="••••••••" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
                     <label className="font-label text-xs uppercase tracking-widest text-on-surface-variant" htmlFor="confirm">Confirm Password</label>
-                    <input className="w-full bg-surface-container-lowest border-none rounded-sm px-4 py-3 text-on-surface focus:ring-1 focus:ring-primary-dim placeholder:text-outline/40"
+                    <input className="w-full glass-panel bg-surface-container-lowest/50 backdrop-blur-md border border-white/5 rounded-sm px-4 py-3 text-on-surface focus:ring-1 focus:ring-primary-dim placeholder:text-outline/40 transition-all hover:bg-surface-container-lowest/80"
                       id="confirm" placeholder="••••••••" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
                   </div>
                 </div>
-              </div>
               
               <div className="pt-4 flex flex-col space-y-4">
-                <button disabled={loading} className="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-on-primary-container font-headline font-bold text-lg rounded-md hover:shadow-[0_0_30px_rgba(143,245,255,0.4)] transition-all duration-300 active:scale-[0.98] disabled:opacity-50 btn-shimmer">
-                  {loading ? (
-                    <span className="inline-flex items-center gap-2 justify-center">
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-                      Registering...
-                    </span>
-                  ) : 'Register Account'}
-
                 <button className="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-on-primary-container font-headline font-bold text-lg rounded-md hover:shadow-[0_0_20px_rgba(143,245,255,0.3)] transition-all duration-300 active:scale-[0.98]">
                   Continue →
                 </button>
                 <p className="text-center text-xs text-on-surface-variant">
                   Already have an account? <Link to="/login" className="text-primary hover:underline">Login</Link>
                 </p>
+              </div>
               </form>
             )}
 

@@ -4,12 +4,33 @@ import { useState, useEffect } from 'react';
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('hero');
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 30);
+
+      // Scrollspy logic to determine active section
+      const sections = ['hero', 'how-it-works', 'features', 'demo'];
+      let current = 'hero';
+      for (const section of sections) {
+        const el = document.getElementById(section);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          // Check if section is in the upper part of the viewport
+          if (rect.top <= 150 && rect.bottom >= 150) {
+            current = section;
+            break;
+          }
+        }
+      }
+      setActiveSection(current);
     };
+    
     window.addEventListener('scroll', handleScroll, { passive: true });
+    // Trigger once on mount
+    handleScroll();
+    
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -17,7 +38,7 @@ const Navbar = () => {
     <nav
       className={`fixed top-0 w-full z-50 transition-all duration-500 ${
         scrolled
-          ? 'bg-[#0c0e16]/80 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] py-3'
+          ? 'bg-[#0c0e16]/80 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] py-3 border-b border-primary/10'
           : 'bg-transparent backdrop-blur-md py-5'
       }`}
     >
@@ -36,19 +57,25 @@ const Navbar = () => {
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-10">
           <a
-            className="nav-link-animated font-['Space_Grotesk'] tracking-wide uppercase text-sm font-bold text-[#00E5FF] pb-1"
+            className={`nav-link-animated font-['Space_Grotesk'] tracking-wide uppercase text-sm font-bold pb-1 transition-all duration-300 ${
+              activeSection === 'hero' ? 'gradient-text scale-105' : 'text-slate-400 hover:text-white'
+            }`}
             href="#hero"
           >
             Explore
           </a>
           <a
-            className="nav-link-animated font-['Space_Grotesk'] tracking-wide uppercase text-sm font-bold text-slate-400 hover:text-white transition-colors duration-300"
+            className={`nav-link-animated font-['Space_Grotesk'] tracking-wide uppercase text-sm font-bold pb-1 transition-all duration-300 ${
+              activeSection === 'how-it-works' ? 'gradient-text scale-105' : 'text-slate-400 hover:text-white'
+            }`}
             href="#how-it-works"
           >
             How It Works
           </a>
           <a
-            className="nav-link-animated font-['Space_Grotesk'] tracking-wide uppercase text-sm font-bold text-slate-400 hover:text-white transition-colors duration-300"
+            className={`nav-link-animated font-['Space_Grotesk'] tracking-wide uppercase text-sm font-bold pb-1 transition-all duration-300 ${
+              activeSection === 'features' ? 'gradient-text scale-105' : 'text-slate-400 hover:text-white'
+            }`}
             href="#features"
           >
             Features
