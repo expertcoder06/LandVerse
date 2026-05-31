@@ -60,18 +60,32 @@ const FileZone = ({ id, label, file, onFile, accept = 'image/*,.pdf' }) => (
 
 // ─── Live Selfie Widget ───────────────────────
 const SelfieWidget = ({ onCapture }) => {
+  const streamRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [stage, setStage] = useState('idle'); // idle | camera | verifying | done
   const [captured, setCaptured] = useState(null);
 
+  // Attach stream once the <video> element is in the DOM (after stage = 'camera')
+  useEffect(() => {
+    if (stage === 'camera' && streamRef.current && videoRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [stage]);
+
   const start = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-      videoRef.current.srcObject = stream;
-      setStage('camera');
-    } catch {
-      alert('Camera access denied. Please allow camera permissions.');
+      streamRef.current = stream;   // save stream before stage change
+      setStage('camera');           // now React renders <video>, useEffect attaches stream
+    } catch (err) {
+      console.error('Camera error:', err);
+      const msg = err?.name === 'NotAllowedError'
+        ? 'Camera permission denied. Please allow camera access in your browser settings.'
+        : err?.name === 'NotReadableError'
+        ? 'Camera is already in use by another application.'
+        : `Camera error: ${err?.message || 'Unknown error'}`;
+      alert(msg);
     }
   };
 
