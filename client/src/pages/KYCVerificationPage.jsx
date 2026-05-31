@@ -3,17 +3,26 @@ import { Link, useNavigate } from 'react-router-dom';
 
 const KYCVerificationPage = () => {
   const navigate = useNavigate();
-  const [idFrontFile, setIdFrontFile] = useState(null);
-  const [idBackFile, setIdBackFile] = useState(null);
-  const [addressFile, setAddressFile] = useState(null);
-  const [addressDocNumber, setAddressDocNumber] = useState('');
+  
+  // Document state variables
+  const [titleDeedFile, setTitleDeedFile] = useState(null);
+  const [ecFile, setEcFile] = useState(null);
+  const [taxReceiptsFile, setTaxReceiptsFile] = useState(null);
+  const [mutationFile, setMutationFile] = useState(null);
+  const [idAddressFile, setIdAddressFile] = useState(null);
+  const [panCardFile, setPanCardFile] = useState(null);
+  const [revenueRecordsFile, setRevenueRecordsFile] = useState(null);
+  const [saleAgreementFile, setSaleAgreementFile] = useState(null);
+
   const [agreed, setAgreed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [capturedSelfie, setCapturedSelfie] = useState(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const canvasRef = useRef(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoaded(true), 100);
@@ -31,20 +40,43 @@ const KYCVerificationPage = () => {
     return () => {
       clearTimeout(timer);
       window.removeEventListener('scroll', handleScroll);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+      }
     };
   }, []);
 
   const handleOpenCamera = async () => {
     setCameraOpen(true);
+    setCapturedSelfie(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
     } catch (err) {
       console.error('Camera access denied:', err);
+      alert('Camera access denied. Please grant camera permission.');
       setCameraOpen(false);
+    }
+  };
+
+  const handleCaptureSelfie = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      // Mirror the selfie capture
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const dataUrl = canvas.toDataURL('image/jpeg');
+      setCapturedSelfie(dataUrl);
+      handleCloseCamera();
     }
   };
 
@@ -66,37 +98,49 @@ const KYCVerificationPage = () => {
     }, 2200);
   };
 
-  const FileUploadSlot = ({ id, label, sublabel, file, onFileChange }) => (
+  const FileUploadSlot = ({ id, label, sublabel, file, onFileChange, icon = 'upload_file' }) => (
     <div
-      className={`group relative rounded-md border-2 border-dashed transition-all p-8 flex flex-col items-center justify-center text-center cursor-pointer min-h-[220px]
+      className={`group relative rounded-md border-2 border-dashed transition-all p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[170px]
         ${file
-          ? 'border-primary/60 bg-primary/5'
+          ? 'border-primary/60 bg-primary/5 shadow-[0_0_15px_rgba(0,238,252,0.1)]'
           : 'border-outline-variant/30 hover:border-primary/50 bg-surface-container-lowest'
         }`}
     >
       <input
         id={id}
         type="file"
-        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+        accept=".pdf,image/*"
+        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20"
         onChange={e => onFileChange(e.target.files[0] || null)}
       />
       {file ? (
-        <>
-          <span className="material-symbols-outlined text-4xl text-primary mb-4">check_circle</span>
-          <span className="text-sm font-medium text-primary break-all px-2">{file.name}</span>
-          <span className="text-xs text-on-surface-variant mt-1">Click to replace</span>
-        </>
+        <div className="flex flex-col items-center z-10">
+          <span className="material-symbols-outlined text-3xl text-primary mb-3">verified</span>
+          <span className="text-xs font-semibold text-primary break-all px-2 max-w-full text-center truncate">{file.name}</span>
+          <span className="text-[10px] text-on-surface-variant/80 mt-1">Click to replace</span>
+        </div>
       ) : (
-        <>
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-4 group-hover:text-primary transition-colors">
-            add_photo_alternate
+        <div className="flex flex-col items-center z-10">
+          <span className="material-symbols-outlined text-3xl text-on-surface-variant/80 mb-3 group-hover:text-primary transition-colors">
+            {icon}
           </span>
-          <span className="text-sm font-medium text-on-surface">{label}</span>
-          <span className="text-xs text-on-surface-variant mt-1">{sublabel}</span>
-        </>
+          <span className="text-xs font-bold text-on-surface leading-tight tracking-wide">{label}</span>
+          <span className="text-[10px] text-on-surface-variant/70 mt-1.5 px-2 leading-normal">{sublabel}</span>
+        </div>
       )}
     </div>
   );
+
+  const isFormValid =
+    titleDeedFile &&
+    ecFile &&
+    taxReceiptsFile &&
+    mutationFile &&
+    idAddressFile &&
+    panCardFile &&
+    revenueRecordsFile &&
+    saleAgreementFile &&
+    agreed;
 
   return (
     <div className="bg-surface text-on-surface font-body min-h-screen custom-scrollbar selection:bg-primary/30 page-enter">
@@ -132,7 +176,7 @@ const KYCVerificationPage = () => {
                 KYC Verification
               </h1>
               <p className="text-on-surface-variant max-w-xl text-lg">
-                Complete your identity verification to unlock full access to the LandVerse ledger and secure your digital assets.
+                Complete your identity and land registry verification to unlock full access to the LandVerse ledger and secure your digital assets.
               </p>
             </div>
 
@@ -164,72 +208,100 @@ const KYCVerificationPage = () => {
             {/* Left Column */}
             <div className="lg:col-span-8 space-y-8">
 
-              {/* Identity Proof */}
+              {/* Property & Land Deeds */}
               <section className="glass-panel-kyc glass-panel p-8 rounded-lg border border-outline-variant/5">
                 <div className="flex items-center gap-4 mb-8">
                   <div className="w-12 h-12 rounded-md bg-primary-container/20 flex items-center justify-center text-primary">
-                    <span className="material-symbols-outlined">badge</span>
+                    <span className="material-symbols-outlined">description</span>
                   </div>
                   <div>
-                    <h2 className="font-headline text-2xl font-semibold">Upload Identity Proof</h2>
-                    <p className="text-sm text-on-surface-variant">Submit your government-issued ID card (Aadhaar or PAN).</p>
+                    <h2 className="font-headline text-2xl font-semibold">Property & Land Ownership</h2>
+                    <p className="text-sm text-on-surface-variant">Submit the legal deeds and records for the registered properties.</p>
                   </div>
                 </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FileUploadSlot
-                    id="id-front"
-                    label="Upload ID Front"
-                    sublabel="PNG, JPG or PDF up to 5MB"
-                    file={idFrontFile}
-                    onFileChange={setIdFrontFile}
+                    id="title-deed"
+                    label="Title Deed / Sale Deed"
+                    sublabel="Proof of legal ownership of land"
+                    file={titleDeedFile}
+                    onFileChange={setTitleDeedFile}
+                    icon="description"
                   />
                   <FileUploadSlot
-                    id="id-back"
-                    label="Upload ID Back"
-                    sublabel="Required for Aadhaar"
-                    file={idBackFile}
-                    onFileChange={setIdBackFile}
+                    id="ec-doc"
+                    label="Encumbrance Certificate (EC)"
+                    sublabel="Verifies clear title and history"
+                    file={ecFile}
+                    onFileChange={setEcFile}
+                    icon="history"
+                  />
+                  <FileUploadSlot
+                    id="property-tax"
+                    label="Property Tax Receipts"
+                    sublabel="Latest tax payment receipts"
+                    file={taxReceiptsFile}
+                    onFileChange={setTaxReceiptsFile}
+                    icon="receipt_long"
+                  />
+                  <FileUploadSlot
+                    id="mutation-records"
+                    label="Mutation Records"
+                    sublabel="Title transfer in municipal records"
+                    file={mutationFile}
+                    onFileChange={setMutationFile}
+                    icon="published_with_changes"
+                  />
+                  <FileUploadSlot
+                    id="revenue-records"
+                    label="Latest Revenue Records"
+                    sublabel="Patta, Chitta, Adangal or ROR documents"
+                    file={revenueRecordsFile}
+                    onFileChange={setRevenueRecordsFile}
+                    icon="analytics"
+                  />
+                  <FileUploadSlot
+                    id="sale-agreement"
+                    label="Sale Agreement"
+                    sublabel="Initial signed transaction agreement"
+                    file={saleAgreementFile}
+                    onFileChange={setSaleAgreementFile}
+                    icon="contract"
                   />
                 </div>
               </section>
 
-              {/* Address Proof */}
+              {/* Personal Verification Documents */}
               <section className="glass-panel-kyc glass-panel p-8 rounded-lg border border-outline-variant/5">
                 <div className="flex items-center gap-4 mb-8">
                   <div className="w-12 h-12 rounded-md bg-secondary-container/20 flex items-center justify-center text-secondary">
-                    <span className="material-symbols-outlined">location_on</span>
+                    <span className="material-symbols-outlined">badge</span>
                   </div>
                   <div>
-                    <h2 className="font-headline text-2xl font-semibold">Address Proof</h2>
-                    <p className="text-sm text-on-surface-variant">Electricity bill, Bank Statement, or Passport.</p>
+                    <h2 className="font-headline text-2xl font-semibold">Identity & Financial Proof</h2>
+                    <p className="text-sm text-on-surface-variant">Verify your identity and tax compliance credentials.</p>
                   </div>
                 </div>
-                <div className="bg-surface-container-lowest rounded-md p-2 flex flex-col md:flex-row gap-2">
-                  <input
-                    type="text"
-                    placeholder="Document Number (Optional)"
-                    value={addressDocNumber}
-                    onChange={e => setAddressDocNumber(e.target.value)}
-                    className="flex-grow bg-transparent border-none focus:ring-0 text-on-surface px-4 py-3 font-body outline-none"
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FileUploadSlot
+                    id="identity-address"
+                    label="Identity & Address Proof"
+                    sublabel="Aadhaar Card, Passport, or DL"
+                    file={idAddressFile}
+                    onFileChange={setIdAddressFile}
+                    icon="badge"
                   />
-                  <div className={`relative rounded-md px-6 py-3 flex items-center justify-center gap-2 cursor-pointer transition-colors
-                    ${addressFile ? 'bg-primary/10 text-primary' : 'bg-surface-container-high hover:bg-surface-container-highest'}`}
-                  >
-                    <input
-                      type="file"
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      onChange={e => setAddressFile(e.target.files[0] || null)}
-                    />
-                    <span className="material-symbols-outlined text-sm">{addressFile ? 'check' : 'upload'}</span>
-                    <span className="text-sm font-semibold whitespace-nowrap">
-                      {addressFile ? addressFile.name.slice(0, 14) + '…' : 'Choose File'}
-                    </span>
-                  </div>
+                  <FileUploadSlot
+                    id="pan-card"
+                    label="PAN Card"
+                    sublabel="Government permanent account card"
+                    file={panCardFile}
+                    onFileChange={setPanCardFile}
+                    icon="credit_card"
+                  />
                 </div>
-                <p className="mt-3 text-[10px] font-label uppercase tracking-widest text-on-surface-variant/60 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-xs">info</span>
-                  Document must be less than 3 months old
-                </p>
               </section>
             </div>
 
@@ -252,6 +324,12 @@ const KYCVerificationPage = () => {
                         ref={videoRef}
                         autoPlay
                         playsInline
+                        className="w-full h-full object-cover scale-x-[-1]"
+                      />
+                    ) : capturedSelfie ? (
+                      <img
+                        src={capturedSelfie}
+                        alt="Captured Selfie"
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -264,23 +342,23 @@ const KYCVerificationPage = () => {
                     <div className="absolute inset-0 bg-primary/10 mix-blend-overlay pointer-events-none"></div>
                     <div className="absolute inset-0 border-[1px] border-primary/20 rounded-full animate-pulse pointer-events-none"></div>
 
-                    {!cameraOpen ? (
+                    {cameraOpen ? (
+                      <button
+                        type="button"
+                        onClick={handleCaptureSelfie}
+                        className="absolute bottom-6 bg-primary text-on-primary-container px-6 py-2 rounded-full font-headline text-xs font-bold uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-primary/20 active:scale-95 transition-transform"
+                      >
+                        <span className="material-symbols-outlined text-sm">photo_camera</span>
+                        Capture Photo
+                      </button>
+                    ) : (
                       <button
                         type="button"
                         onClick={handleOpenCamera}
                         className="absolute bottom-6 bg-primary text-on-primary-container px-6 py-2 rounded-full font-headline text-xs font-bold uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-primary/20 active:scale-95 transition-transform"
                       >
                         <span className="material-symbols-outlined text-sm">photo_camera</span>
-                        Open Camera
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleCloseCamera}
-                        className="absolute bottom-6 bg-error text-on-error px-6 py-2 rounded-full font-headline text-xs font-bold uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-error/20 active:scale-95 transition-transform"
-                      >
-                        <span className="material-symbols-outlined text-sm">close</span>
-                        Close
+                        {capturedSelfie ? 'Retake Selfie' : 'Open Camera'}
                       </button>
                     )}
                   </div>
@@ -302,7 +380,7 @@ const KYCVerificationPage = () => {
               <div className="bg-surface-container-high p-8 rounded-lg border border-primary/10 shadow-2xl shadow-black/40">
                 <h3 className="font-headline text-xl font-bold mb-4">Final Submission</h3>
                 <p className="text-sm text-on-surface-variant mb-6 leading-relaxed">
-                  By clicking submit, you confirm that the information provided is accurate and belongs to you.
+                  By clicking submit, you confirm that all 8 uploaded property and identity documents are accurate and authentic.
                 </p>
                 <div className="flex items-center gap-3 mb-8 bg-surface-container-low p-4 rounded-md">
                   <input
@@ -325,9 +403,9 @@ const KYCVerificationPage = () => {
                 ) : (
                   <button
                     type="submit"
-                    disabled={!agreed || isSubmitting}
+                    disabled={!isFormValid || isSubmitting}
                     className={`w-full py-4 rounded-md font-headline font-bold uppercase tracking-widest flex items-center justify-center gap-3 transition-all active:scale-[0.98]
-                      ${agreed
+                      ${isFormValid
                         ? 'bg-gradient-to-r from-primary to-primary-container text-on-primary-container hover:shadow-[0_0_30px_rgba(0,238,252,0.3)] cursor-pointer btn-shimmer'
                         : 'bg-surface-container-high text-on-surface-variant/40 cursor-not-allowed'
                       }`}
@@ -369,6 +447,9 @@ const KYCVerificationPage = () => {
           </div>
         </div>
       </main>
+
+      {/* Hidden canvas for capturing selfie */}
+      <canvas ref={canvasRef} className="hidden" />
 
       {/* Footer */}
       <footer className="w-full py-12 bg-surface-container-lowest flex flex-col md:flex-row justify-between items-center px-12 border-t border-outline-variant/15">
