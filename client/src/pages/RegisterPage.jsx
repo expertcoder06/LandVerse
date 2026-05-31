@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { useScrollAnimation } from '../hooks/useScrollAnimation';
 
 // ─────────────────────────────────────────────
 // Mock IPFS upload – replace with real Pinata /
@@ -271,8 +270,6 @@ const RegisterPage = () => {
 
   return (
     <div className="bg-background text-on-background font-body min-h-screen flex flex-col selection:bg-primary selection:text-on-primary-container bg-mesh page-enter">
-      {/* TopAppBar */}
-    <div className="bg-background text-on-background font-body min-h-screen flex flex-col selection:bg-primary selection:text-on-primary-container bg-mesh">
       {/* Header */}
       <header className="fixed top-0 w-full z-50 bg-surface-variant/40 backdrop-blur-2xl shadow-[0_20px_40px_rgba(0,0,0,0.4)] h-20 px-8 flex justify-between items-center">
         <Link to="/" className="text-2xl font-headline font-bold tracking-widest text-primary">LandVerse</Link>
@@ -280,17 +277,12 @@ const RegisterPage = () => {
       </header>
 
       <main className="flex-grow flex items-center justify-center pt-24 pb-12 px-4 relative overflow-hidden">
-        {/* Decorative Ambient Element */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/10 rounded-full blur-[120px] animate-float-slow"></div>
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/10 rounded-full blur-[120px] animate-float"></div>
+        {/* Decorative Ambient Elements */}
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/10 rounded-full blur-[120px] animate-float-slow" />
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/10 rounded-full blur-[120px] animate-float" />
         <div className="absolute inset-0 grid-bg opacity-20 pointer-events-none" />
-        
-        <section className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-8 glass-card glass-card-interactive rounded-lg overflow-hidden relative z-10 shadow-2xl hover-glow-border">
-          {/* Left Side: Editorial Content */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/10 rounded-full blur-[120px]" />
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-secondary/10 rounded-full blur-[120px]" />
 
-        <section className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-8 glass-card glass-card-interactive rounded-lg overflow-hidden relative z-10 shadow-2xl">
+        <section className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-8 glass-card glass-card-interactive rounded-lg overflow-hidden relative z-10 shadow-2xl hover-glow-border">
           {/* Left panel */}
           <div className="hidden lg:flex flex-col justify-between p-12 bg-surface-container-low relative overflow-hidden">
             <div className="relative z-10">
@@ -383,23 +375,15 @@ const RegisterPage = () => {
                       id="confirm" placeholder="••••••••" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
                   </div>
                 </div>
-              </div>
-              
-              <div className="pt-4 flex flex-col space-y-4">
-                <button disabled={loading} className="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-on-primary-container font-headline font-bold text-lg rounded-md hover:shadow-[0_0_30px_rgba(143,245,255,0.4)] transition-all duration-300 active:scale-[0.98] disabled:opacity-50 btn-shimmer">
-                  {loading ? (
-                    <span className="inline-flex items-center gap-2 justify-center">
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-                      Registering...
-                    </span>
-                  ) : 'Register Account'}
 
-                <button className="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-on-primary-container font-headline font-bold text-lg rounded-md hover:shadow-[0_0_20px_rgba(143,245,255,0.3)] transition-all duration-300 active:scale-[0.98]">
-                  Continue →
-                </button>
-                <p className="text-center text-xs text-on-surface-variant">
-                  Already have an account? <Link to="/login" className="text-primary hover:underline">Login</Link>
-                </p>
+                <div className="pt-4 flex flex-col space-y-4">
+                  <button className="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-on-primary-container font-headline font-bold text-lg rounded-md hover:shadow-[0_0_20px_rgba(143,245,255,0.3)] transition-all duration-300 active:scale-[0.98]">
+                    Continue →
+                  </button>
+                  <p className="text-center text-xs text-on-surface-variant">
+                    Already have an account? <Link to="/login" className="text-primary hover:underline">Login</Link>
+                  </p>
+                </div>
               </form>
             )}
 
