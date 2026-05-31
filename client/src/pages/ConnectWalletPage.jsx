@@ -48,6 +48,33 @@ const ConnectWalletPage = () => {
     }
   };
 
+  const handleDisconnectWallet = async () => {
+    if (!window.confirm('Are you sure you want to disconnect and unlink this wallet from your LandVerse profile?')) {
+      return;
+    }
+
+    try {
+      setIsConnecting('disconnecting');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ wallet_address: null })
+          .eq('id', session.user.id);
+
+        if (error) throw error;
+      }
+      setConnectedWallet(null);
+      setConnectedAddress('');
+      alert('Wallet disconnected and unlinked successfully!');
+    } catch (err) {
+      console.error('Wallet disconnect error:', err);
+      alert(err.message || 'MetaMask disconnection failed.');
+    } finally {
+      setIsConnecting(null);
+    }
+  };
+
   useEffect(() => {
     const checkExistingWallet = async () => {
       try {
