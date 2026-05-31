@@ -91,6 +91,38 @@ const DashboardPage = () => {
     }
   };
 
+  const handleDisconnectWallet = async () => {
+    if (!window.confirm('Are you sure you want to disconnect and unlink this MetaMask wallet from your LandVerse profile?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ wallet_address: null })
+          .eq('id', user.id);
+
+        if (error) throw error;
+
+        // Reset local state
+        setUserProfile(prev => ({
+          ...prev,
+          walletAddress: ''
+        }));
+        
+        alert('Wallet disconnected and unlinked successfully!');
+      }
+    } catch (err) {
+      console.error('Wallet disconnection error:', err);
+      alert(err.message || 'MetaMask disconnection failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const fetchUserData = async () => {
       setLoading(true);
@@ -309,6 +341,13 @@ const DashboardPage = () => {
                     {userProfile.walletAddress.substring(0, 5)}...{userProfile.walletAddress.substring(userProfile.walletAddress.length - 4)}
                   </span>
                 </div>
+                <button
+                  onClick={handleDisconnectWallet}
+                  title="Disconnect Wallet"
+                  className="p-1 rounded-full text-on-surface-variant hover:text-error hover:bg-error/10 active:scale-90 transition-all ml-1 cursor-pointer flex items-center justify-center border border-transparent hover:border-error/20"
+                >
+                  <span className="material-symbols-outlined text-[16px]">link_off</span>
+                </button>
               </div>
             ) : (
               <button
