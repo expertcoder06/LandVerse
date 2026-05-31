@@ -27,8 +27,8 @@ const Navbar = () => {
           to="/"
           className="text-2xl font-black tracking-tighter text-[#00E5FF] font-headline flex items-center gap-2 group"
         >
-          <span className="inline-block w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-container flex items-center justify-center transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110">
-            <span className="text-on-primary-container font-black text-sm">LV</span>
+          <span className="inline-block w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-container flex items-center justify-center transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 overflow-hidden">
+            <img src="/favicon.png" alt="LandVerse Logo" className="w-full h-full object-contain p-0.5" />
           </span>
           <span className="transition-colors duration-300 group-hover:text-white">LandVerse</span>
         </Link>

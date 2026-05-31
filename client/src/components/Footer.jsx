@@ -25,8 +25,8 @@ const Footer = () => {
       >
         {/* Brand */}
         <div className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-container flex items-center justify-center">
-            <span className="text-on-primary-container font-black text-sm">LV</span>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-container flex items-center justify-center overflow-hidden">
+            <img src="/favicon.png" alt="LandVerse Logo" className="w-full h-full object-contain p-0.5" />
           </div>
           <span className="text-lg font-bold text-white font-headline">LandVerse</span>
         </div>
