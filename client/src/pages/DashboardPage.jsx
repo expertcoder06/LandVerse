@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { connectWallet, verifyWalletOwnership } from '../web3';
 
 const NAV_ITEMS = [
   { icon: 'dashboard', label: 'Dashboard', id: 'dashboard' },
@@ -42,18 +43,53 @@ const DashboardPage = () => {
 
   // Supabase states
   const [userProfile, setUserProfile] = useState({
-    fullName: 'Alex Sterling',
-    role: 'seller',
-    walletAddress: '0x82f0a1e3e920d3f2c5d144888fca02d18492031',
+    fullName: '',
+    role: 'buyer',
+    walletAddress: '',
     id: null
   });
   const [stats, setStats] = useState({
-    totalLands: 12,
-    nftsOwned: 8,
-    pendingVerifications: 2
+    totalLands: 0,
+    nftsOwned: 0,
+    pendingVerifications: 0
   });
   const [myProperties, setMyProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const handleConnectWallet = async () => {
+    try {
+      setIsConnecting(true);
+      const { signer, address } = await connectWallet();
+      
+      // Dynamic signature verification challenge for security
+      await verifyWalletOwnership(signer, address);
+      
+      // Update profile in Supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ wallet_address: address })
+          .eq('id', user.id);
+
+        if (error) throw error;
+
+        // Update local state
+        setUserProfile(prev => ({
+          ...prev,
+          walletAddress: address
+        }));
+        
+        alert('Wallet connected and verified successfully!');
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'MetaMask connection failed.');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -61,7 +97,8 @@ const DashboardPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setLoading(false);
-        return; // Fallback to mock data
+        navigate('/login');
+        return;
       }
 
       // Fetch user profile from Supabase profiles table
@@ -75,7 +112,7 @@ const DashboardPage = () => {
         setUserProfile({
           fullName: profile.full_name || 'Anonymous User',
           role: profile.role || 'buyer',
-          walletAddress: profile.wallet_address || '0x0000000000000000000000000000000000000000',
+          walletAddress: profile.wallet_address || '',
           id: profile.id
         });
 
@@ -113,13 +150,15 @@ const DashboardPage = () => {
 
         if (props && props.length > 0) {
           setMyProperties(props);
+        } else {
+          setMyProperties([]);
         }
       }
       setLoading(false);
     };
 
     fetchUserData();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     // Tick the block number up subtly
@@ -254,11 +293,35 @@ const DashboardPage = () => {
               <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error"></span>
             </button>
 
-            {/* ETH Balance */}
-            <button className="flex items-center gap-2 bg-surface-container-high px-4 py-2 rounded-full text-on-surface-variant hover:text-primary transition-all border border-outline-variant/10">
-              <span className="material-symbols-outlined text-sm">account_balance_wallet</span>
-              <span className="text-sm font-label font-medium tracking-tight">2.45 ETH</span>
-            </button>
+            {/* Wallet Connect Status */}
+            {userProfile.walletAddress ? (
+              <div className="flex items-center gap-3 bg-surface-container-high px-4 py-2 rounded-full border border-outline-variant/10 shadow-lg shadow-success/5 transition-all">
+                <img
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBdIVsUarpd3oBH5AZZuR_4UMzbKWu-M5Zr_KRm5ePRiQsNa1uhNbRt1yH6VwDJarboZpyKfMrhMX2hHCDbPf3rBiPuPensyN4HoE_p1q13VjqwO6Upl5CHLzRtaxY8PnDNibHoucurwcltrPi4GsOykYDYb0HUF7f1boH7IOWv9-1sxyytEuGDqgpeJIg_AB4S-S-vvyT1WY3Bq9cx1GddD8Vy5tWeDxgJcHF-hBfJSbYr4OKn1NsLsfVMl2hZ4uG4wExVXDspwJ4"
+                  alt="MetaMask Logo"
+                  className="w-6 h-6 object-contain"
+                />
+                <div className="flex flex-col text-left leading-normal">
+                  <span className="text-[11px] font-bold text-success flex items-center gap-1">
+                    Wallet Connected ✅
+                  </span>
+                  <span className="text-[10px] font-mono text-on-surface-variant font-medium">
+                    {userProfile.walletAddress.substring(0, 5)}...{userProfile.walletAddress.substring(userProfile.walletAddress.length - 4)}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={handleConnectWallet}
+                disabled={isConnecting}
+                className="flex items-center gap-2 primary-gradient text-on-primary-container hover:shadow-[0_0_15px_rgba(0,238,252,0.3)] transition-all px-4 py-2 rounded-full text-xs font-headline font-bold border border-outline-variant/10 cursor-pointer active:scale-95 duration-200"
+              >
+                <span className="material-symbols-outlined text-sm">account_balance_wallet</span>
+                <span className="text-xs font-headline font-bold uppercase tracking-wider">
+                  {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                </span>
+              </button>
+            )}
           </div>
         </header>
 
@@ -382,72 +445,38 @@ const DashboardPage = () => {
                 ))}
               </div>
             ) : (
-              <>
-                {/* Featured Card (Large) - Fallback Mock */}
-                <div className="lg:col-span-8 group">
-                  <GlassCard className="relative overflow-hidden h-[400px]">
-                    <img
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTHk7S3F-bKLRTsMlCOiK5FUTfl8k2N26eG-MDNkrV0joDJ118dj4NHEf6fXxpKOvX70afNwVuQviouu5zdxZjOFXWQkiFu7ngIPRUkMivdlGQycPsg5CS-3gniKxDjTPFn1S51kPrMWrGIoCnaygPJZa5swDiAdvURqesOlGYrK4ISJShcgwurx1xSd0XnBT-W5YoGeDmJlr_u8wS2Xma3NODFsTUEw_mAHxUKN7CqG_5tTU1Nrly40U4FOhwPmleiscK9U2cCyut"
-                      alt="Metropolis Sector 7G"
-                      className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/10 to-transparent" />
-                    <div className="absolute bottom-0 left-0 p-8 w-full flex justify-between items-end">
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="bg-secondary-container/80 backdrop-blur-md text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">
-                            Verified NFT
-                          </span>
-                          <span className="bg-primary/20 backdrop-blur-md text-primary px-3 py-1 rounded-full text-[10px] font-label font-bold uppercase tracking-wider">
-                            Sector 7G
-                          </span>
-                        </div>
-                        <h4 className="text-4xl font-display font-bold mb-2">Metropolis Sector 7G</h4>
-                        <p className="text-on-surface-variant font-body flex items-center gap-2">
-                          <span className="material-symbols-outlined text-sm">location_on</span>
-                          Coordinates: 42.3601° N, 71.0589° W
-                        </p>
-                      </div>
-                      <div className="flex gap-4">
-                        <button className="w-12 h-12 rounded-full border border-outline-variant/30 flex items-center justify-center backdrop-blur-md hover:bg-white/10 transition-colors">
-                          <span className="material-symbols-outlined">visibility</span>
-                        </button>
-                        <button className="w-12 h-12 rounded-full border border-outline-variant/30 flex items-center justify-center backdrop-blur-md hover:bg-white/10 transition-colors text-primary">
-                          <span className="material-symbols-outlined">share</span>
-                        </button>
-                      </div>
-                    </div>
-                  </GlassCard>
-                </div>
-
-                {/* Right stacked cards - Fallback Mock */}
-                <div className="lg:col-span-4 flex flex-col gap-6">
-                  {/* Azure Heights Card */}
-                  <GlassCard className="overflow-hidden group flex flex-col flex-1">
-                    <div className="h-40 relative overflow-hidden">
-                      <img
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbPIpKmurIl87B6L9xfw4UZa_t1qgVbg09uLe8zs5Rlp9WWUc5kFK5nA-ruQNtJHN3fKhK-QKOca6gY56wvPWwwIXJn-JxPSO9DqNgtrkjDUv4QPjx_6fgK2YsR3a3b_XSVqfmfnhLDVpj5gHZ7nMdqJrVz_2ZjhXmlJ3Yi_UkKd6_exPaeSFGybCYeu2voJ_EkuPtGeqL14FAoYXEJwRzhKlnzNEMngA0j3DQ93jDaKT7YzD5kM-8gt53biGaeXv4QrYKZi0xfh1a"
-                        alt="Azure Heights Parcel B"
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="absolute top-4 right-4 bg-tertiary-container/90 text-on-tertiary-container px-2 py-1 rounded text-[8px] font-label font-black uppercase">
-                        Minting Now
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <h5 className="text-xl font-display font-bold mb-1">Azure Heights Parcel B</h5>
-                      <p className="text-xs text-on-surface-variant mb-4 font-label tracking-tighter">HASH: 0x92f...e76c</p>
-                      <div className="flex justify-between items-center mt-auto">
-                        <span className="text-primary font-bold">4.2 ETH</span>
-                        <Link to="/payment" className="text-on-surface-variant hover:text-on-surface transition-colors font-label text-xs uppercase font-bold flex items-center gap-2">
-                          View Details
-                          <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                        </Link>
-                      </div>
-                    </div>
-                  </GlassCard>
-                </div>
-              </>
+              <div className="lg:col-span-12 w-full">
+                <GlassCard className="flex flex-col items-center justify-center p-12 text-center border border-outline-variant/10 shadow-2xl relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-secondary/5 opacity-50 pointer-events-none" />
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6 border border-primary/20 text-primary animate-pulse">
+                    <span className="material-symbols-outlined text-3xl">landscape</span>
+                  </div>
+                  <h4 className="text-2xl font-display font-bold mb-2 text-on-surface">No Registered Lands Found</h4>
+                  <p className="text-on-surface-variant max-w-md mx-auto mb-8 font-body text-sm leading-relaxed">
+                    You don't have any registered properties in your decentralized real estate portfolio yet. 
+                    {userProfile.role === 'seller' 
+                      ? ' Get started by uploading your first land asset for registry approval!' 
+                      : ' Browse the LandVerse marketplace to purchase verified property assets.'}
+                  </p>
+                  {userProfile.role === 'seller' ? (
+                    <Link
+                      to="/kyc"
+                      className="primary-gradient text-on-primary-container px-6 py-3 rounded-md font-display font-bold flex items-center gap-2 hover:shadow-[0_0_20px_rgba(0,238,252,0.4)] transition-all active:scale-95 text-sm"
+                    >
+                      <span className="material-symbols-outlined text-sm">add</span>
+                      Register Your First Land
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/marketplace"
+                      className="primary-gradient text-on-primary-container px-6 py-3 rounded-md font-display font-bold flex items-center gap-2 hover:shadow-[0_0_20px_rgba(0,238,252,0.4)] transition-all active:scale-95 text-sm"
+                    >
+                      <span className="material-symbols-outlined text-sm">shopping_cart</span>
+                      Browse Marketplace
+                    </Link>
+                  )}
+                </GlassCard>
+              </div>
             )}
           </div>
 

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { connectWallet, verifyWalletOwnership } from '../web3';
+import { supabase } from '../supabaseClient';
 
 const ConnectWalletPage = () => {
   const navigate = useNavigate();
@@ -7,14 +9,43 @@ const ConnectWalletPage = () => {
   const [hoveredButton, setHoveredButton] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [connectedWallet, setConnectedWallet] = useState(null);
+  const [connectedAddress, setConnectedAddress] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
 
-  const handleWalletConnect = (walletName) => {
-    setIsConnecting(walletName);
-    setTimeout(() => {
+  const handleWalletConnect = async (walletName) => {
+    if (walletName !== 'MetaMask') {
+      setIsConnecting(walletName);
+      setTimeout(() => {
+        setIsConnecting(null);
+        setConnectedWallet(walletName);
+      }, 1400);
+      return;
+    }
+
+    try {
+      setIsConnecting('MetaMask');
+      const { signer, address } = await connectWallet();
+      
+      // Prompt user to sign nonce challenge to verify private key ownership
+      await verifyWalletOwnership(signer, address);
+      
+      setConnectedWallet('MetaMask');
+      setConnectedAddress(address);
+
+      // Save the securely verified wallet address in Supabase profiles if logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await supabase
+          .from('profiles')
+          .update({ wallet_address: address })
+          .eq('id', session.user.id);
+      }
+    } catch (err) {
+      console.error('Wallet connection error:', err);
+      alert(err.message || 'Wallet connection/signature verification failed.');
+    } finally {
       setIsConnecting(null);
-      setConnectedWallet(walletName);
-    }, 1400);
+    }
   };
 
   useEffect(() => {
@@ -207,7 +238,7 @@ const ConnectWalletPage = () => {
           {connectedWallet && (
             <div className="mt-6 flex flex-col items-center gap-3 animate-fade-in">
               <p className="text-xs text-on-surface-variant">
-                <span className="text-primary font-semibold">{connectedWallet}</span> connected successfully.
+                <span className="text-primary font-semibold">{connectedWallet}</span> {connectedAddress ? `(${connectedAddress.substring(0, 6)}...${connectedAddress.substring(38)})` : ''} connected successfully.
               </p>
               <Link
                 to="/kyc"
